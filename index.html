@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <meta name="apple-mobile-web-app-title" content="幹線計算">
+
+  <title>幹線動力計算</title>
+
+  <style>
+
+    :root{
+
+      --bg:#0b1020;
+
+      --card:#121a30;
+
+      --line:#2b3657;
+
+      --text:#f3f5ff;
+
+      --sub:#b6c0dd;
+
+      --accent:#60a5fa;
+
+      --ok:#22c55e;
+
+      --ng:#f59e0b;
+
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+
+      margin:0;
+
+      background:linear-gradient(180deg,#0b1020,#16213a);
+
+      color:var(--text);
+
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+    }
+
+    .wrap{
+
+      max-width:760px;
+
+      margin:0 auto;
+
+      padding:16px;
+
+    }
+
+    h1{
+
+      font-size:28px;
+
+      margin:8px 0 6px;
+
+    }
+
+    p{
+
+      color:var(--sub);
+
+      font-size:13px;
+
+      line-height:1.6;
+
+      margin:0 0 14px;
+
+    }
+
+    .card{
+
+      background:rgba(18,26,48,.96);
+
+      border:1px solid var(--line);
+
+      border-radius:18px;
+
+      padding:14px;
+
+      margin:14px 0;
+
+    }
+
+    h2{
+
+      margin:0 0 10px;
+
+      font-size:18px;
+
+    }
+
+    .grid{
+
+      display:grid;
+
+      grid-template-columns:1fr 1fr;
+
+      gap:12px;
+
+    }
+
+    label{
+
+      display:block;
+
+      font-size:13px;
+
+      color:var(--sub);
+
+      margin-bottom:6px;
+
+    }
+
+    input,select,button{
+
+      width:100%;
+
+      padding:12px;
+
+      border-radius:12px;
+
+      border:1px solid var(--line);
+
+      background:#1b2540;
+
+      color:var(--text);
+
+      font-size:16px;
+
+    }
+
+    button{
+
+      background:var(--accent);
+
+      color:#04111f;
+
+      border:none;
+
+      font-weight:700;
+
+      margin-top:8px;
+
+    }
+
+    .result{
+
+      background:#0f1730;
+
+      border:1px solid var(--line);
+
+      border-radius:12px;
+
+      padding:12px;
+
+      margin:10px 0;
+
+    }
+
+    .k{
+
+      color:var(--sub);
+
+      font-size:13px;
+
+    }
+
+    .v{
+
+      font-size:24px;
+
+      font-weight:700;
+
+      margin-top:4px;
+
+      word-break:break-word;
+
+    }
+
+    .ok{color:var(--ok)}
+
+    .ng{color:var(--ng)}
+
+    .note{
+
+      font-size:12px;
+
+      color:var(--sub);
+
+      margin-top:8px;
+
+      line-height:1.5;
+
+    }
+
+    @media (max-width:640px){
+
+      .grid{grid-template-columns:1fr}
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <h1>幹線動力計算</h1>
+
+    <p>簡易版です。HSTの許容電流・インピーダンス値は手入力で使ってください。</p>
+
+    <div class="card">
+
+      <h2>計算条件</h2>
+
+      <div class="grid">
+
+        <div>
+
+          <label for="phase">電源方式</label>
+
+          <select id="phase">
+
+            <option value="3">3φ3W / 3φ4W</option>
+
+            <option value="1">1φ2W / 1φ3W</option>
+
+          </select>
+
+        </div>
+
+        <div>
+
+          <label for="voltage">電圧 [V]</label>
+
+          <input id="voltage" type="number" value="200">
+
+        </div>
+
+        <div>
+
+          <label for="loadType">負荷入力</label>
+
+          <select id="loadType">
+
+            <option value="kw">kW</option>
+
+            <option value="a">A</option>
+
+            <option value="kva">kVA</option>
+
+          </select>
+
+        </div>
+
+        <div>
+
+          <label for="loadValue">負荷値</label>
+
+          <input id="loadValue" type="number" step="0.01" value="10.55">
+
+        </div>
+
+        <div>
+
+          <label for="qty">台数</label>
+
+          <input id="qty" type="number" value="1">
+
+        </div>
+
+        <div>
+
+          <label for="pf">力率</label>
+
+          <input id="pf" type="number" step="0.01" value="0.8">
+
+        </div>
+
+        <div>
+
+          <label for="eff">効率</label>
+
+          <input id="eff" type="number" step="0.01" value="0.9">
+
+        </div>
+
+        <div>
+
+          <label for="length">配線長 [m]</label>
+
+          <input id="length" type="number" value="30">
+
+        </div>
+
+        <div>
+
+          <label for="mainBreaker">主幹ブレーカー [A]</label>
+
+          <input id="mainBreaker" type="number" value="100">
+
+        </div>
+
+        <div>
+
+          <label for="allowable">ケーブル許容電流 [A]</label>
+
+          <input id="allowable" type="number" value="115">
+
+        </div>
+
+        <div>
+
+          <label for="impedance">インピーダンス [Ω/km]</label>
+
+          <input id="impedance" type="number" step="0.001" value="1.300">
+
+        </div>
+
+      </div>
+
+      <button id="calcBtn">計算する</button>
+
+      <div class="note">電圧降下は簡易計算です。3相: √3×I×Z×L / 1000、単相: 2×I×Z×L / 1000</div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>計算結果</h2>
+
+      <div class="result">
+
+        <div class="k">負荷電流</div>
+
+        <div class="v" id="current">-</div>
+
+      </div>
+
+      <div class="result">
+
+        <div class="k">合計容量</div>
+
+        <div class="v" id="capacity">-</div>
+
+      </div>
+
+      <div class="result">
+
+        <div class="k">電圧降下</div>
+
+        <div class="v" id="drop">-</div>
+
+      </div>
+
+      <div class="result">
+
+        <div class="k">主幹裕度</div>
+
+        <div class="v" id="margin">-</div>
+
+      </div>
+
+      <div class="result">
+
+        <div class="k">判定</div>
+
+        <div class="v" id="judge">-</div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    const ids = [
+
+      "phase","voltage","loadType","loadValue","qty","pf","eff",
+
+      "length","mainBreaker","allowable","impedance"
+
+    ];
+
+    function n(id){
+
+      return parseFloat(document.getElementById(id).value || 0);
+
+    }
+
+    function saveInputs(){
+
+      const data = {};
+
+      ids.forEach(id => data[id] = document.getElementById(id).value);
+
+      localStorage.setItem("feederCalcInputs", JSON.stringify(data));
+
+    }
+
+    function loadInputs(){
+
+      try{
+
+        const data = JSON.parse(localStorage.getItem("feederCalcInputs") || "{}");
+
+        ids.forEach(id => {
+
+          if (data[id] !== undefined) document.getElementById(id).value = data[id];
+
+        });
+
+      }catch(e){}
+
+    }
+
+    function calc(){
+
+      const phase = document.getElementById("phase").value;
+
+      const loadType = document.getElementById("loadType").value;
+
+      const V = n("voltage");
+
+      const load = n("loadValue");
+
+      const qty = n("qty");
+
+      const pf = n("pf") || 1;
+
+      const eff = n("eff") || 1;
+
+      const L = n("length");
+
+      const main = n("mainBreaker");
+
+      const allowable = n("allowable");
+
+      const Z = n("impedance");
+
+      let I = 0;
+
+      let totalKW = 0;
+
+      let totalKVA = 0;
+
+      if (loadType === "kw"){
+
+        totalKW = load * qty;
+
+        if (phase === "3"){
+
+          I = totalKW * 1000 / (Math.sqrt(3) * V * pf * eff);
+
+        } else {
+
+          I = totalKW * 1000 / (V * pf * eff);
+
+        }
+
+        totalKVA = totalKW / pf;
+
+      } else if (loadType === "a"){
+
+        I = load * qty;
+
+        if (phase === "3"){
+
+          totalKVA = Math.sqrt(3) * V * I / 1000;
+
+        } else {
+
+          totalKVA = V * I / 1000;
+
+        }
+
+        totalKW = totalKVA * pf;
+
+      } else {
+
+        totalKVA = load * qty;
+
+        if (phase === "3"){
+
+          I = totalKVA * 1000 / (Math.sqrt(3) * V);
+
+        } else {
+
+          I = totalKVA * 1000 / V;
+
+        }
+
+        totalKW = totalKVA * pf;
+
+      }
+
+      const vd = phase === "3"
+
+        ? Math.sqrt(3) * I * Z * L / 1000
+
+        : 2 * I * Z * L / 1000;
+
+      const vdPct = V ? (vd / V) * 100 : 0;
+
+      const marginPct = main ? ((main - I) / main) * 100 : 0;
+
+      document.getElementById("current").textContent = I.toFixed(2) + " A";
+
+      document.getElementById("capacity").textContent =
+
+        totalKW.toFixed(2) + " kW / " + totalKVA.toFixed(2) + " kVA";
+
+      document.getElementById("drop").textContent =
+
+        vd.toFixed(2) + " V (" + vdPct.toFixed(2) + "%)";
+
+      document.getElementById("margin").textContent =
+
+        marginPct.toFixed(2) + " %";
+
+      const msgs = [];
+
+      const okCurrent = I <= allowable;
+
+      const okMain = I <= main;
+
+      const okDrop = vdPct <= 5;
+
+      msgs.push(okCurrent ? "許容電流 OK" : "許容電流 NG");
+
+      msgs.push(okMain ? "主幹 OK" : "主幹超過");
+
+      if (vdPct <= 3){
+
+        msgs.push("電圧降下 小");
+
+      } else if (vdPct <= 5){
+
+        msgs.push("電圧降下 注意");
+
+      } else {
+
+        msgs.push("電圧降下 大");
+
+      }
+
+      const judge = document.getElementById("judge");
+
+      judge.textContent = msgs.join(" / ");
+
+      judge.className = "v " + ((okCurrent && okMain && okDrop) ? "ok" : "ng");
+
+      saveInputs();
+
+    }
+
+    document.getElementById("calcBtn").addEventListener("click", calc);
+
+    ids.forEach(id => {
+
+      document.getElementById(id).addEventListener("change", saveInputs);
+
+    });
+
+    loadInputs();
+
+    calc();
+
+  </script>
+
+</body>
+
+</html>
