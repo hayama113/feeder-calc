@@ -2116,7 +2116,7 @@ function renderCompare(){
 
   root.appendChild(table);
 }
-か
+
 function openSavedItem(item){
   state = structuredClone(item.input);
   state.lastResult = structuredClone(item.result);
