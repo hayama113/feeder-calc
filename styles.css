@@ -24,12 +24,13 @@
   box-sizing:border-box;
 }
 
-html,body{
+html,
+body{
   margin:0;
   padding:0;
   background:var(--bg);
   color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
   min-height:100%;
 }
 
@@ -38,7 +39,10 @@ body{
   overflow-x:hidden;
 }
 
-button,input,select,textarea{
+button,
+input,
+select,
+textarea{
   font:inherit;
 }
 
@@ -47,7 +51,8 @@ button{
   cursor:pointer;
 }
 
-img,svg{
+img,
+svg{
   max-width:100%;
   display:block;
 }
@@ -83,6 +88,11 @@ h1{
   margin:4px 0 0;
   font-size:26px;
   line-height:1.25;
+}
+
+h2,
+h3{
+  margin-top:0;
 }
 
 .main{
@@ -310,11 +320,6 @@ button.danger,
   font-size:14px;
 }
 
-.load-cards-wrap{
-  overflow:hidden;
-  width:100%;
-}
-
 .load-cards{
   display:flex;
   gap:14px;
@@ -387,6 +392,10 @@ button.danger,
   flex-direction:column;
   justify-content:center;
   min-height:58px;
+}
+
+.readonly-box.compact-box{
+  min-height:auto;
 }
 
 .readonly-box strong{
@@ -678,6 +687,7 @@ button.danger,
   text-align:left;
   background:#fff;
   white-space:nowrap;
+  vertical-align:top;
 }
 
 .doc-table th{
@@ -697,7 +707,6 @@ button.danger,
 }
 
 .doc-table td:first-child{
-  background:#fff;
   font-weight:700;
 }
 
@@ -827,14 +836,6 @@ button.danger,
   font-size:12px;
 }
 
-.doc-group-card{
-  padding:12px;
-}
-
-.doc-item-card{
-  padding:12px;
-}
-
 .update-banner{
   position:fixed;
   left:50%;
@@ -864,6 +865,8 @@ button.danger,
   pointer-events:none;
   transition:opacity .25s;
   z-index:60;
+  max-width:calc(100vw - 32px);
+  text-align:center;
 }
 
 #toast.show{
@@ -890,6 +893,23 @@ button.danger,
   .load-card{
     flex-basis:min(92vw,560px);
     max-width:min(92vw,560px);
+  }
+
+  .inline-actions{
+    align-items:stretch;
+  }
+
+  .inline-actions button{
+    flex:1 1 auto;
+  }
+
+  .readonly-grid > div{
+    flex-direction:column;
+    gap:4px;
+  }
+
+  .readonly-grid > div strong{
+    text-align:left;
   }
 }
 
@@ -920,7 +940,6 @@ button.danger,
   dialog,
   #installBtn,
   #toggleResultBtn,
-  #toggleEditBtn,
   #saveResultTopBtn,
   #saveResultBottomBtn,
   #updateBanner,
