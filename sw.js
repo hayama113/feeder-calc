@@ -1,10 +1,10 @@
-const CACHE_NAME = 'feeder-calc-v3-202604-d';
+const CACHE_NAME = 'feeder-calc-v3-202604-f';
 
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
+  './styles.css?v=20260425f',
+  './app.js?v=20260425f',
   './manifest.webmanifest',
   './icon.svg',
   './404.html'
