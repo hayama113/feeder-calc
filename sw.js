@@ -1,4 +1,4 @@
-const CACHE = 'lv-feeder-webapp-v1';
+const CACHE = 'feeder-calc-v2';
 const ASSETS = [
   './',
   './index.html',
