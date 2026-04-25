@@ -2116,3 +2116,836 @@ function renderCompare(){
 
   root.appendChild(table);
 }
+か
+function openSavedItem(item){
+  state = structuredClone(item.input);
+  state.lastResult = structuredClone(item.result);
+
+  persistState();
+  renderAll();
+  switchScreen('calc');
+
+  $('resultPanel').classList.remove('hidden');
+  $('resultBody').classList.remove('hidden');
+  updateResultError('');
+  renderResult();
+
+  showToast('計算画面へ読み込みました。');
+}
+
+function switchSavedTab(tab){
+  document.querySelectorAll('.saved-seg').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.savedTab === tab);
+  });
+
+  document.querySelectorAll('.saved-subview').forEach(el => {
+    el.classList.remove('active');
+  });
+
+  const view = $(`saved-subview-${tab}`);
+  if (view) {
+    view.classList.add('active');
+  }
+}
+
+function switchScreen(screen){
+  Object.entries(screens).forEach(([key, el]) => {
+    el.classList.toggle('active', key === screen);
+  });
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.screen === screen);
+  });
+}
+
+function renderAmpacitySection(){
+  const corrected = correctedAmpacity();
+  const breakdown = getCorrectionBreakdown();
+
+  $('correctedAmpacityValue').textContent = corrected
+    ? formatNumber(corrected, 2)
+    : '-';
+
+  $('coefTemperature').textContent = breakdown.temperature
+    ? formatNumber(breakdown.temperature, 3)
+    : '-';
+
+  $('coefParallel').textContent = breakdown.parallel
+    ? formatNumber(breakdown.parallel, 3)
+    : '-';
+
+  const methodCoef =
+    state.installationMethod === '気中'
+      ? breakdown.air
+      : state.installationMethod === 'ラック'
+        ? breakdown.rack
+        : state.installationMethod === '配管'
+          ? breakdown.pipe
+          : null;
+
+  $('coefMethod').textContent = methodCoef
+    ? formatNumber(methodCoef, 3)
+    : '-';
+
+  $('coefCondition').textContent = breakdown.condition
+    ? formatNumber(breakdown.condition, 3)
+    : '-';
+
+  $('coefFinal').textContent = breakdown.final
+    ? formatNumber(breakdown.final, 3)
+    : '-';
+
+  const info = getCableInfo(
+    selectedCableTypeFromState(),
+    Number(state.cableSize)
+  );
+
+  const massPerM = info?.massKgKm
+    ? Number(info.massKgKm) / 1000
+    : 0;
+
+  $('massPerMeter').textContent = massPerM
+    ? formatNumber(massPerM, 3)
+    : '-';
+
+  const totalMass =
+    massPerM && state.wiringLength
+      ? massPerM *
+        Number(state.wiringLength) *
+        Number(state.parallelCount || 1)
+      : 0;
+
+  $('massTotal').textContent = totalMass
+    ? formatNumber(totalMass, 2)
+    : '-';
+
+  $('rackWidthValue').textContent = info?.outerDiameter
+    ? rackWidthFor(
+        Number(info.outerDiameter),
+        Number(state.parallelCount || 1)
+      )
+    : '-';
+
+  const badge = $('ampacityModeBadge');
+  badge.className = 'mode-badge';
+
+  if (state.ampacityMode === 'auto') {
+    badge.textContent = '自動';
+  } else if (state.ampacityMode === 'manual') {
+    badge.textContent = '手動';
+    badge.classList.add('manual');
+  } else {
+    badge.textContent = '未設定';
+    badge.classList.add('none');
+  }
+}
+
+function applySettingsValues(){
+  $('verAmpacity').textContent = VERSIONS.ampacity;
+  $('verPhysical').textContent = VERSIONS.physical;
+  $('verForm').textContent = VERSIONS.form;
+}
+
+function renderAll(){
+  setSelectOptions(
+    $('calcMode'),
+    [
+      {value: 'auto', label: '自動選定'},
+      {value: 'existing', label: '既設開閉器指定'}
+    ],
+    '選択してください',
+    state.calcMode
+  );
+
+  setSelectOptions(
+    $('powerSystem'),
+    ['1φ2W', '1φ3W', '3φ3W', '3φ4W'],
+    '選択してください',
+    state.powerSystem
+  );
+
+  setSelectOptions(
+    $('voltage'),
+    ['100', '200', '400'],
+    '選択してください',
+    state.voltage
+  );
+
+  setSelectOptions(
+    $('powerFactor'),
+    POWER_FACTOR_OPTIONS,
+    '選択してください',
+    state.powerFactor
+  );
+
+  setSelectOptions(
+    $('efficiency'),
+    EFFICIENCY_OPTIONS,
+    '選択してください',
+    state.efficiency
+  );
+
+  setSelectOptions(
+    $('existingBreaker'),
+    BREAKER_SIZES.map(v => ({
+      value: String(v),
+      label: `${v}A`
+    })),
+    '選択してください',
+    state.existingBreaker
+  );
+
+  setSelectOptions(
+    $('loadCount'),
+    Array.from({length: 20}, (_, i) => ({
+      value: String(i + 1),
+      label: String(i + 1)
+    })),
+    '選択してください',
+    state.loadCount
+  );
+
+  const cableType = selectedCableTypeFromState();
+
+  setSelectOptions(
+    $('cableType'),
+    ['CV-1C', 'CV-2C', 'CV-3C', 'CV-4C', 'CVT'],
+    '選択してください',
+    cableType
+  );
+
+  setSelectOptions(
+    $('cableSize'),
+    getCableSizes(cableType).map(v => ({
+      value: String(v),
+      label: `${v}sq`
+    })),
+    '選択してください',
+    state.cableSize
+  );
+
+  setSelectOptions(
+    $('installationMethod'),
+    ['気中', 'ラック', '配管'],
+    '選択してください',
+    state.installationMethod
+  );
+
+  setSelectOptions(
+    $('layingCondition'),
+    ['一般', '密集', '日射あり'],
+    '選択してください',
+    state.layingCondition
+  );
+
+  setSelectOptions(
+    $('ambientTemperature'),
+    [20, 25, 30, 35, 40, 45, 50].map(v => ({
+      value: String(v),
+      label: `${v}℃`
+    })),
+    '選択してください',
+    state.ambientTemperature
+  );
+
+  setSelectOptions(
+    $('parallelCount'),
+    [1, 2, 3, 4, 5, 6].map(v => ({
+      value: String(v),
+      label: String(v)
+    })),
+    '選択してください',
+    state.parallelCount
+  );
+
+  $('wiringLength').value = state.wiringLength || '';
+  $('projectName').value = state.projectName || '';
+  $('projectRemarks').value = state.projectRemarks || '';
+  $('baseAmpacity').value = state.baseAmpacity || '';
+
+  $('calcModeHint').textContent =
+    state.calcMode === 'existing'
+      ? '既設開閉器サイズを基準に幹線サイズを判定します。'
+      : '合計負荷容量から必要最小開閉器を算出し、幹線サイズを選定します。';
+
+  document.querySelectorAll('.seg').forEach(btn => {
+    btn.classList.toggle(
+      'active',
+      btn.dataset.calcType === state.calculationType
+    );
+  });
+
+  renderLoadCards();
+  renderAmpacitySection();
+  renderDocs();
+  renderSaved();
+  applySettingsValues();
+
+  if (state.lastResult) {
+    $('resultPanel').classList.remove('hidden');
+    $('resultBody').classList.remove('hidden');
+    updateResultError('');
+    renderResult();
+  }
+}
+
+function wireNumericInput(input, onChange){
+  input.addEventListener('input', onChange);
+}
+
+function ensureExcelButton(){
+  if ($('excelBtn') || !$('csvBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'excelBtn';
+  btn.className = 'ghost';
+  btn.type = 'button';
+  btn.textContent = 'Excel出力';
+
+  $('csvBtn').insertAdjacentElement('afterend', btn);
+}
+
+function bindEvents(){
+  ensureExcelButton();
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchScreen(btn.dataset.screen);
+    });
+  });
+
+  document.querySelectorAll('.seg').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.seg').forEach(v => {
+        v.classList.remove('active');
+      });
+
+      btn.classList.add('active');
+      state.calculationType = btn.dataset.calcType;
+
+      persistState();
+    });
+  });
+
+  document.querySelectorAll('.saved-seg').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchSavedTab(btn.dataset.savedTab);
+    });
+  });
+
+  $('calcMode').addEventListener('change', () => {
+    state.calcMode = $('calcMode').value;
+    persistState();
+    renderAll();
+  });
+
+  $('powerSystem').addEventListener('change', () => {
+    state.powerSystem = $('powerSystem').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('voltage').addEventListener('change', () => {
+    state.voltage = $('voltage').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('powerFactor').addEventListener('change', () => {
+    state.powerFactor = $('powerFactor').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('efficiency').addEventListener('change', () => {
+    state.efficiency = $('efficiency').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('existingBreaker').addEventListener('change', () => {
+    state.existingBreaker = $('existingBreaker').value;
+    persistState();
+    validateRealtime();
+  });
+
+  $('loadCount').addEventListener('change', () => {
+    state.loadCount = $('loadCount').value;
+    normalizeLoads();
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('cableType').addEventListener('change', () => {
+    const nextType = $('cableType').value;
+
+    applyCableTypeToState(nextType);
+
+    const sizes = getCableSizes(nextType).map(String);
+
+    if (!sizes.includes(String(state.cableSize))) {
+      state.cableSize = '';
+      state.baseAmpacity = '';
+      state.ampacityMode = 'none';
+    }
+
+    persistState();
+    renderAll();
+  });
+
+  $('cableSize').addEventListener('change', () => {
+    state.cableSize = $('cableSize').value;
+
+    const info = getCableInfo(
+      selectedCableTypeFromState(),
+      Number(state.cableSize)
+    );
+
+    state.baseAmpacity = info?.ampacity
+      ? String(info.ampacity)
+      : '';
+
+    state.ampacityMode = info?.ampacity
+      ? 'auto'
+      : 'none';
+
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  wireNumericInput($('baseAmpacity'), () => {
+    state.baseAmpacity = $('baseAmpacity').value;
+    state.ampacityMode = $('baseAmpacity').value ? 'manual' : 'none';
+
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('installationMethod').addEventListener('change', () => {
+    state.installationMethod = $('installationMethod').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('layingCondition').addEventListener('change', () => {
+    state.layingCondition = $('layingCondition').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('ambientTemperature').addEventListener('change', () => {
+    state.ambientTemperature = $('ambientTemperature').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('parallelCount').addEventListener('change', () => {
+    state.parallelCount = $('parallelCount').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('projectName').addEventListener('input', () => {
+    state.projectName = $('projectName').value;
+    persistState();
+  });
+
+  $('projectRemarks').addEventListener('input', () => {
+    state.projectRemarks = $('projectRemarks').value;
+    persistState();
+  });
+
+  wireNumericInput($('wiringLength'), () => {
+    state.wiringLength = $('wiringLength').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('calculateBtn').addEventListener('click', calculate);
+
+  $('toggleResultBtn').addEventListener('click', () => {
+    const body = $('resultBody');
+
+    body.classList.toggle('hidden');
+
+    $('toggleResultBtn').textContent =
+      body.classList.contains('hidden')
+        ? '展開する'
+        : '折りたたむ';
+  });
+
+  $('saveResultTopBtn').addEventListener('click', openSaveDialog);
+  $('saveResultBottomBtn').addEventListener('click', openSaveDialog);
+
+  $('confirmSaveBtn').addEventListener('click', e => {
+    e.preventDefault();
+    confirmSave();
+  });
+
+  $('csvBtn').addEventListener('click', downloadCsv);
+  $('excelBtn')?.addEventListener('click', downloadExcel);
+  $('pdfBtn').addEventListener('click', printPdf);
+
+  $('groundWireBtn').addEventListener('click', () => {
+    $('groundDialog').showModal();
+  });
+
+  $('closeGroundDialog').addEventListener('click', () => {
+    $('groundDialog').close();
+  });
+
+  $('groundType').addEventListener('change', updateGroundResult);
+  $('groundWireType').addEventListener('change', updateGroundResult);
+
+  $('docsSearch').addEventListener('input', renderDocs);
+
+  $('openDocsFromCalc').addEventListener('click', () => {
+    switchScreen('docs');
+  });
+
+  $('returnCalcFromDocs').addEventListener('click', () => {
+    switchScreen('calc');
+  });
+
+  $('savedSearch').addEventListener('input', renderSaved);
+
+  $('clearHistoryBtn').addEventListener('click', () => {
+    if (!confirm('履歴をすべて削除しますか？')) return;
+
+    historyItems = [];
+    persistState();
+    renderSaved();
+  });
+
+  $('resetDisclaimerBtn').addEventListener('click', () => {
+    localStorage.removeItem(STORAGE.disclaimer);
+    showToast('次回起動時に免責を再表示します。');
+  });
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    $('installBtn').hidden = false;
+  });
+
+  $('installBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+    $('installBtn').hidden = true;
+  });
+}
+
+function validateRealtime(){
+  const missing = missingFields();
+  markMissingFields(missing);
+}
+
+function openSaveDialog(){
+  if (!state.lastResult) {
+    return showToast('先に計算してください。');
+  }
+
+  $('saveTitleInput').value =
+    state.projectName ||
+    `${state.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'}_${new Date().toLocaleString('sv-SE').replace(/[: ]/g, '_')}`;
+
+  $('saveMemoInput').value = state.projectRemarks || '';
+  $('saveDialog').showModal();
+}
+
+function confirmSave(){
+  const title = $('saveTitleInput').value.trim();
+
+  if (!title) {
+    return showToast('保存名を入力してください。');
+  }
+
+  const item = {
+    id: crypto.randomUUID(),
+    title,
+    memo: $('saveMemoInput').value.trim(),
+    savedAt: new Date().toISOString(),
+    input: structuredClone(state),
+    result: structuredClone(state.lastResult),
+    calculationMode: state.calcMode,
+    versions: structuredClone(VERSIONS)
+  };
+
+  const existed = savedItems.some(v => v.title === title);
+
+  upsertSavedItem(item);
+
+  persistState();
+  renderSaved();
+
+  $('saveDialog').close();
+
+  showToast(
+    existed
+      ? '同名の保存データを上書きしました。'
+      : '保存しました。'
+  );
+}
+
+function excelSafe(value){
+  return escapeHtml(value ?? '').replace(/\n/g, '<br>');
+}
+
+function downloadExcel(){
+  if (!state.lastResult) {
+    return showToast('先に計算してください。');
+  }
+
+  const r = state.lastResult;
+
+  const summaryRows = [
+    ['工事件名', state.projectName || ''],
+    ['工事種別', state.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'],
+    ['提出先', ''],
+    ['図番', ''],
+    ['備考', state.projectRemarks || ''],
+    ['計算方式', state.calcMode === 'existing' ? '既設開閉器指定' : '自動選定'],
+    ['電源方式', state.powerSystem],
+    ['電圧[V]', state.voltage],
+    ['力率', state.powerFactor],
+    ['効率', state.efficiency],
+    ['配線長[m]', state.wiringLength],
+    ['既設開閉器[A]', state.existingBreaker || ''],
+    ['ケーブル種類', r.cableType],
+    ['ケーブルサイズ[sq]', r.cableSize],
+    ['基準許容電流[A]', formatNumber(r.baseAmpacity, 2)],
+    ['補正後許容電流[A]', formatNumber(r.correctedAmpacity, 2)],
+    ['必要最小開閉器[A]', r.requiredBreaker],
+    ['採用開閉器[A]', r.adoptedBreaker],
+    ['合計容量[kW]', formatNumber(r.totalKW, 3)],
+    ['合計容量[kVA]', formatNumber(r.totalKVA, 3)],
+    ['合計電流[A]', formatNumber(r.totalCurrent, 2)],
+    ['電圧降下[V]', formatNumber(r.voltageDropV, 2)],
+    ['電圧降下[%]', formatNumber(r.voltageDropPercent, 2)],
+    ['開閉器裕度[%]', formatNumber(r.breakerMarginPercent, 2)],
+    ['容量裕度[kW]', formatNumber(r.capacityMarginKW, 2)],
+    ['概算質量[kg/m]', formatNumber(r.massKgM, 3)],
+    ['概算総質量[kg]', formatNumber(r.massTotalKg, 2)],
+    ['参考ラック幅', r.rackWidth],
+    ['良否判定', r.judgement],
+    ['選定主因', r.mainFactor],
+    ['選定根拠', r.reasons.join('、')],
+    ['許容電流データ版', VERSIONS.ampacity],
+    ['外径・質量データ版', VERSIONS.physical],
+    ['帳票様式版', VERSIONS.form]
+  ];
+
+  const loadRows = r.loadDetails.map((load, index) => [
+    index + 1,
+    load.name,
+    load.inputType,
+    load.value,
+    formatNumber(load.current, 2),
+    formatNumber(load.kw, 3),
+    formatNumber(load.kva, 3)
+  ]);
+
+  const html = `
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body{
+            font-family:"Yu Gothic",Meiryo,sans-serif;
+          }
+          table{
+            border-collapse:collapse;
+            margin-bottom:18px;
+          }
+          th,td{
+            border:1px solid #999;
+            padding:6px 8px;
+            mso-number-format:"\\@";
+          }
+          th{
+            background:#eaf2ff;
+          }
+          .note{
+            color:#c00;
+            font-weight:bold;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>低圧幹線計算 結果表</h1>
+
+        <p class="note">
+          本帳票は参考資料です。内線規定・関係法令・現場仕様・機器仕様を確認し、最終判断は利用者責任で行ってください。
+        </p>
+
+        <h2>計算結果</h2>
+        <table>
+          ${summaryRows.map(row => `
+            <tr>
+              <th>${excelSafe(row[0])}</th>
+              <td>${excelSafe(row[1])}</td>
+            </tr>
+          `).join('')}
+        </table>
+
+        <h2>負荷一覧</h2>
+        <table>
+          <tr>
+            <th>No</th>
+            <th>負荷名称</th>
+            <th>入力方式</th>
+            <th>負荷値</th>
+            <th>換算電流[A]</th>
+            <th>換算容量[kW]</th>
+            <th>換算容量[kVA]</th>
+          </tr>
+          ${loadRows.map(row => `
+            <tr>
+              ${row.map(cell => `<td>${excelSafe(cell)}</td>`).join('')}
+            </tr>
+          `).join('')}
+        </table>
+
+        <h2>施工参考メモ</h2>
+        <table>
+          ${r.constructionNotes.map(note => `
+            <tr>
+              <td>${excelSafe(note)}</td>
+            </tr>
+          `).join('')}
+        </table>
+
+        <h2>根拠メモ</h2>
+        <table>
+          ${r.rootMemo.map(note => `
+            <tr>
+              <td>${excelSafe(note)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob(
+    ['\ufeff' + html],
+    {
+      type: 'application/vnd.ms-excel;charset=utf-8;'
+    }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+
+  a.href = url;
+  a.download = `${state.projectName || 'feeder_calc'}_${Date.now()}.xls`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function downloadCsv(){
+  if (!state.lastResult) {
+    return showToast('先に計算してください。');
+  }
+
+  const r = state.lastResult;
+
+  const rows = [
+    ['項目', '値'],
+    ['工事件名', state.projectName || ''],
+    ['備考', state.projectRemarks || ''],
+    ['計算種別', state.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'],
+    ['計算方式', state.calcMode === 'existing' ? '既設開閉器指定' : '自動選定'],
+    ['電源方式', state.powerSystem],
+    ['電圧[V]', state.voltage],
+    ['力率', state.powerFactor],
+    ['効率', state.efficiency],
+    ['配線長[m]', state.wiringLength],
+    ['既設開閉器[A]', state.existingBreaker || ''],
+    ['ケーブル種類', r.cableType],
+    ['ケーブルサイズ[sq]', r.cableSize],
+    ['基準許容電流[A]', r.baseAmpacity],
+    ['条件反映後許容電流[A]', r.correctedAmpacity],
+    ['温度補正係数', r.correctionBreakdown.temperature],
+    ['条数補正係数', r.correctionBreakdown.parallel],
+    ['敷設方法', state.installationMethod],
+    ['敷設条件補正係数', r.correctionBreakdown.condition],
+    ['最終補正係数', r.correctionBreakdown.final],
+    ['必要最小開閉器[A]', r.requiredBreaker],
+    ['採用開閉器[A]', r.adoptedBreaker],
+    ['採用ケーブルサイズ', `${r.cableType} ${r.cableSize}sq`],
+    ['合計容量[kW]', r.totalKW],
+    ['合計容量[kVA]', r.totalKVA],
+    ['合計電流[A]', r.totalCurrent],
+    ['電圧降下[V]', r.voltageDropV],
+    ['電圧降下[%]', r.voltageDropPercent],
+    ['開閉器裕度[%]', r.breakerMarginPercent],
+    ['容量裕度[kW]', r.capacityMarginKW],
+    ['概算質量[kg/m]', r.massKgM],
+    ['概算総質量[kg]', r.massTotalKg],
+    ['参考ラック幅', r.rackWidth],
+    ['良否判定', r.judgement],
+    ['選定主因', r.mainFactor],
+    ['選定根拠', r.reasons.join('、')],
+    ['許容電流データ版', VERSIONS.ampacity],
+    ['外径・質量データ版', VERSIONS.physical],
+    ['帳票様式版', VERSIONS.form],
+    [],
+    [
+      '負荷No',
+      '負荷名称',
+      '入力方式',
+      '負荷値',
+      '換算電流[A]',
+      '換算容量[kW]',
+      '換算容量[kVA]'
+    ]
+  ];
+
+  r.loadDetails.forEach((load, index) => {
+    rows.push([
+      index + 1,
+      load.name,
+      load.inputType,
+      load.value,
+      load.current,
+      load.kw,
+      load.kva
+    ]);
+  });
+
+  const csv = rows
+    .map(row => row.map(v => `"${String(v ?? '').replaceAll('"', '""')}"`).join(','))
+    .join('\n');
+
+  const blob = new Blob(
+    [csv],
+    {
+      type: 'text/csv;charset=utf-8;'
+    }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+
+  a.href = url;
+  a.download = `${state.projectName || 'feeder_calc'}_${Date.now()}.csv`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
