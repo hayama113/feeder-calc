@@ -2949,3 +2949,85 @@ function downloadCsv(){
 
   URL.revokeObjectURL(url);
 }
+function printPdf(){
+  if (!state.lastResult) {
+    return showToast('先に計算してください。');
+  }
+
+  if (!confirm('本帳票は参考資料です。最終判断は利用者責任で行ってください。続行しますか？')) {
+    return;
+  }
+
+  window.print();
+}
+
+function updateGroundResult(){
+  const groundType = $('groundType').value;
+  const wireType = $('groundWireType').value;
+  const breaker = Number(
+    state.lastResult?.adoptedBreaker ||
+    state.existingBreaker ||
+    0
+  );
+
+  const rule =
+    GROUND_RULES.find(v =>
+      v.groundType === groundType &&
+      v.wireType === wireType &&
+      breaker <= v.maxBreaker
+    ) ||
+    GROUND_RULES.find(v =>
+      v.groundType === groundType &&
+      v.wireType === wireType
+    );
+
+  $('groundResult').textContent = rule
+    ? `採用開閉器 ${breaker || '-'}A の参考接地線サイズ：${rule.size}`
+    : '条件に合う参考サイズがありません。';
+}
+
+function runDisclaimer(){
+  if (localStorage.getItem(STORAGE.disclaimer) === 'accepted') return;
+
+  disclaimerStep = 1;
+
+  $('disclaimerTitle').textContent = '免責事項';
+  $('disclaimerBody').textContent =
+    '本Webアプリおよび帳票出力内容は参考資料です。計算結果は現場条件・仕様・関係法令により変わります。';
+
+  $('disclaimerDialog').showModal();
+
+  $('disclaimerNextBtn').onclick = () => {
+    if (disclaimerStep === 1) {
+      disclaimerStep = 2;
+
+      $('disclaimerTitle').textContent = '重要な確認';
+      $('disclaimerBody').textContent =
+        '最終判断は利用者責任で行ってください。内線規定、関係法令、現場条件、機器仕様、保護協調等を必ず確認してください。';
+    } else {
+      localStorage.setItem(STORAGE.disclaimer, 'accepted');
+      $('disclaimerDialog').close();
+    }
+  };
+}
+
+function registerSW(){
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('./sw.js')
+      .catch(() => {});
+  }
+}
+
+function init(){
+  ensureDocsUpgraded();
+  bindEvents();
+  applySettingsValues();
+  renderAll();
+  switchScreen('calc');
+  switchSavedTab('history');
+  runDisclaimer();
+  registerSW();
+}
+
+document.addEventListener('DOMContentLoaded', init);
