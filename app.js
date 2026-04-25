@@ -1,142 +1,171 @@
+const VERSIONS = {
+  app: 'Web v2.0.0',
+  ampacity: '2026.04-A',
+  physical: '2026.04-B',
+  form: '2026.04-C'
+};
+
 const STORAGE = {
-  appState: 'lv-feeder-app-state-v1',
-  history: 'lv-feeder-history-v1',
-  saved: 'lv-feeder-saved-v1',
-  disclaimer: 'lv-feeder-disclaimer-v1'
+  disclaimer: 'feeder_calc_disclaimer_v2',
+  history: 'feeder_calc_history_v2',
+  saved: 'feeder_calc_saved_v2',
+  ui: 'feeder_calc_ui_v2'
 };
 
-const MASTER = {
-  breakers: [15,20,30,40,50,60,75,100,125,150,175,200,225,250,300,400,500,600],
-  cableSizes: [2,3.5,5.5,8,14,22,38,60,100,150,200,250,325],
-  cableAmpacity: [
-    { cableType:'CV', coreType:'2C', sizeSq:5.5, ampacity:41 },
-    { cableType:'CV', coreType:'2C', sizeSq:8, ampacity:50 },
-    { cableType:'CV', coreType:'2C', sizeSq:14, ampacity:68 },
-    { cableType:'CVT', coreType:'3C', sizeSq:14, ampacity:78 },
-    { cableType:'CVT', coreType:'3C', sizeSq:22, ampacity:101 },
-    { cableType:'CVT', coreType:'3C', sizeSq:38, ampacity:139 },
-    { cableType:'CVT', coreType:'3C', sizeSq:60, ampacity:179 },
-    { cableType:'CVD', coreType:'2C', sizeSq:5.5, ampacity:41 },
-    { cableType:'CVD', coreType:'2C', sizeSq:8, ampacity:50 }
-  ],
-  impedance: [
-    { cableType:'CV', coreType:'2C', sizeSq:5.5, value:7.20 },
-    { cableType:'CV', coreType:'2C', sizeSq:8, value:5.10 },
-    { cableType:'CV', coreType:'2C', sizeSq:14, value:3.30 },
-    { cableType:'CVT', coreType:'3C', sizeSq:14, value:3.15 },
-    { cableType:'CVT', coreType:'3C', sizeSq:22, value:2.10 },
-    { cableType:'CVT', coreType:'3C', sizeSq:38, value:1.30 },
-    { cableType:'CVT', coreType:'3C', sizeSq:60, value:0.82 },
-    { cableType:'CVD', coreType:'2C', sizeSq:5.5, value:7.20 }
-  ],
-  diameters: [
-    { cableType:'CV', coreType:'2C', sizeSq:5.5, value:10.5 },
-    { cableType:'CV', coreType:'2C', sizeSq:8, value:11.5 },
-    { cableType:'CV', coreType:'2C', sizeSq:14, value:13.8 },
-    { cableType:'CVT', coreType:'3C', sizeSq:14, value:16.2 },
-    { cableType:'CVT', coreType:'3C', sizeSq:22, value:18.8 },
-    { cableType:'CVT', coreType:'3C', sizeSq:38, value:22.8 },
-    { cableType:'CVT', coreType:'3C', sizeSq:60, value:26.2 },
-    { cableType:'CVD', coreType:'2C', sizeSq:5.5, value:10.5 }
-  ],
-  derating: [
-    { installationMethod:'気中敷設', sunlight:'日射なし', temperature:30, multi:false, count:1, spacing:'密着', factor:1.00 },
-    { installationMethod:'気中敷設', sunlight:'日射なし', temperature:40, multi:false, count:1, spacing:'密着', factor:1.00 },
-    { installationMethod:'気中敷設', sunlight:'日射なし', temperature:40, multi:true, count:2, spacing:'密着', factor:0.82 },
-    { installationMethod:'気中敷設', sunlight:'日射なし', temperature:40, multi:true, count:3, spacing:'密着', factor:0.75 },
-    { installationMethod:'気中敷設', sunlight:'日射なし', temperature:40, multi:true, count:2, spacing:'離隔あり', factor:0.90 },
-    { installationMethod:'管路', sunlight:'日射なし', temperature:40, multi:false, count:1, spacing:'密着', factor:0.90 },
-    { installationMethod:'埋設', sunlight:'日射なし', temperature:40, multi:false, count:1, spacing:'密着', factor:0.95 },
-    { installationMethod:'気中敷設', sunlight:'直射日光あり', temperature:40, multi:false, count:1, spacing:'密着', factor:0.90 }
-  ],
-  conduit: [
-    { diameterMax:12, count:1, conduit:'E25' },
-    { diameterMax:14, count:1, conduit:'E31' },
-    { diameterMax:17, count:1, conduit:'E31' },
-    { diameterMax:19, count:1, conduit:'E39' },
-    { diameterMax:23, count:1, conduit:'E51' },
-    { diameterMax:27, count:1, conduit:'E63' },
-    { diameterMax:17, count:2, conduit:'E39' },
-    { diameterMax:19, count:2, conduit:'E51' },
-    { diameterMax:23, count:2, conduit:'E63' },
-    { diameterMax:27, count:2, conduit:'E75' }
-  ],
-  rack: [
-    { diameterMax:17, count:1, rack:'W100 × H50' },
-    { diameterMax:19, count:1, rack:'W100 × H50' },
-    { diameterMax:23, count:1, rack:'W150 × H50' },
-    { diameterMax:27, count:1, rack:'W200 × H50' },
-    { diameterMax:17, count:2, rack:'W150 × H50' },
-    { diameterMax:23, count:2, rack:'W200 × H50' },
-    { diameterMax:27, count:2, rack:'W300 × H100' }
-  ],
-  ground: [
-    { groundType:'D種', wireType:'IV', maxBreaker:100, size:'5.5sq' },
-    { groundType:'D種', wireType:'IV', maxBreaker:225, size:'8sq' },
-    { groundType:'C種', wireType:'IV', maxBreaker:100, size:'8sq' },
-    { groundType:'C種', wireType:'IV', maxBreaker:225, size:'14sq' },
-    { groundType:'D種', wireType:'CV', maxBreaker:100, size:'5.5sq' },
-    { groundType:'C種', wireType:'CV', maxBreaker:100, size:'8sq' }
-  ]
-};
+const BREAKER_SIZES = [10, 15, 20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 500, 600, 800];
+const RACK_WIDTHS = [200, 300, 400, 500, 600, 800];
+const POWER_FACTOR_OPTIONS = ['0.5','0.55','0.6','0.65','0.7','0.75','0.8','0.85','0.9','0.95','1.0'];
+const EFFICIENCY_OPTIONS = [...POWER_FACTOR_OPTIONS];
+const TEMP_COEF = {20:1.18,25:1.14,30:1.10,35:1.05,40:1.00,45:0.95,50:0.89};
+const METHOD_COEF = {'気中':1.00,'管路':0.95,'埋設':0.90};
+const CONDITION_COEF = {'日射なし':1.00,'直射日光あり':0.95};
+const PARALLEL_COEF = {1:1.00,2:0.90,3:0.85,4:0.80,5:0.75,6:0.70};
+const DROP_LIMIT_PERCENT = 5.0;
 
-const DOCS = [
-  {id:'cable_ampacity',group:'ケーブル・配管',title:'ケーブル許容電流・低減率',summary:'ケーブル種類ごとの許容電流と敷設条件ごとの低減率。',sections:[{heading:'概要',paragraphs:['計算で使用する基準許容電流と低減率の見方を整理します。']},{heading:'注意事項',bullets:['最終判断は内線規定、関係法令、現場条件、機器仕様等を確認してください。']}]},
-  {id:'impedance_diameter',group:'ケーブル・配管',title:'インピーダンス・ケーブル外径',summary:'電圧降下計算や配管選定に使う数値。',sections:[{heading:'アプリ内での使いどころ',bullets:['電圧降下計算','配管参考サイズ表示','ラック参考選定案']}]},
-  {id:'conduit_size',group:'ケーブル・配管',title:'配管サイズ一覧表',summary:'一般的な電気設計の参考配管サイズ。',sections:[{heading:'注意',paragraphs:['配管サイズは参考表示です。最終的な施工条件で確認してください。']}]},
-  {id:'conduit_support_spacing',group:'ケーブル・配管',title:'配管支持間隔',summary:'一般的な配管支持間隔の確認用。',sections:[{heading:'概要',paragraphs:['支持間隔は現場条件・法令・仕様で確認が必要です。']}]},
-  {id:'vertical_support',group:'ケーブル・配管',title:'垂直管路内の電線支持間隔',summary:'垂直配管での支持の考え方。',sections:[{heading:'概要',paragraphs:['垂直区間では落下防止と支持条件を十分に確認します。']}]},
-  {id:'rack_selection',group:'ラック・支持・耐震',title:'ケーブルラック選定の考え方',summary:'占有幅と余裕率からラック幅の参考を整理。',sections:[{heading:'アプリ内での使いどころ',bullets:['参考ケーブルラック選定案の表示']}]},
-  {id:'rack_support',group:'ラック・支持・耐震',title:'ケーブルラック支持間隔',summary:'一般的なラック支持間隔の考え方。',sections:[{heading:'概要',paragraphs:['支持間隔は施工条件と資料を確認してください。']}]},
-  {id:'rack_seismic',group:'ラック・支持・耐震',title:'ケーブルラック耐震基準',summary:'耐震上の確認ポイント。',sections:[{heading:'概要',paragraphs:['支持・固定・補強条件は現場条件に応じて判断してください。']}]},
-  {id:'ground_standards',group:'基準・解説・数式',title:'接地基準解説',summary:'高圧 / 低圧の接地区分を整理。',sections:[{heading:'高圧の接地区分',bullets:['A種接地','B種接地']},{heading:'低圧の接地区分',bullets:['C種接地','D種接地']},{heading:'注意事項',paragraphs:['本Web版の自動選定は低圧 C種・D種のみです。']}]},
-  {id:'ground_resistance',group:'基準・解説・数式',title:'接地抵抗一覧',summary:'接地抵抗の目安一覧。',sections:[{heading:'概要',paragraphs:['接地抵抗の目安は用途と接地種別で確認します。']}]},
-  {id:'main_breaker',group:'基準・解説・数式',title:'主幹選定の考え方',summary:'主幹電流、裕度、保護協調の考え方。',sections:[{heading:'概要',paragraphs:['本アプリの主幹選定は補助表示です。始動電流や保護協調は別途確認してください。']}]},
-  {id:'voltage_drop_guide',group:'基準・解説・数式',title:'電圧降下の目安',summary:'3% / 5% の見方。',sections:[{heading:'判定目安',bullets:['3%以下：良好','3%超〜5%以下：注意','5%超：要見直し']}]},
-  {id:'basic_formulas',group:'基準・解説・数式',title:'基本電気理論・主要計算式',summary:'オームの法則、電力式、電圧降下式。',sections:[{heading:'収録式',bullets:['オームの法則','単相回路の電力','三相回路の電力','電圧降下式','許容電流補正式']},{heading:'アプリ採用式',paragraphs:['単相: ΔV = 2 × I × Z × L / 1000','三相: ΔV = √3 × I × Z × L / 1000']}]},
-  {id:'hv_symbols',group:'基準・解説・数式',title:'高圧単線結線図の略記号・機器解説',summary:'DS, LBS, VCB などの略記号解説。',sections:[{heading:'対象例',bullets:['DS / 断路器','LBS / 高圧交流負荷開閉器','VCB / 真空遮断器','PAS / 柱上気中負荷開閉器','CT / VT / ZCT / OCR / DGR']}]},
-  {id:'lv_ground_wire',group:'基準・解説・数式',title:'低圧 C種・D種 接地線サイズ選定',summary:'主幹ブレーカーに応じた参考サイズ。',sections:[{heading:'対象',bullets:['C種','D種']},{heading:'注意',paragraphs:['参考表示です。最終判断は関係法令・仕様で確認してください。']}]}
+const GROUND_RULES = [
+  {groundType:'C種', wireType:'IV', maxBreaker:100, size:'8sq'},
+  {groundType:'C種', wireType:'IV', maxBreaker:200, size:'14sq'},
+  {groundType:'C種', wireType:'IV', maxBreaker:400, size:'22sq'},
+  {groundType:'D種', wireType:'IV', maxBreaker:100, size:'5.5sq'},
+  {groundType:'D種', wireType:'IV', maxBreaker:200, size:'8sq'},
+  {groundType:'D種', wireType:'IV', maxBreaker:400, size:'14sq'},
+  {groundType:'C種', wireType:'CV', maxBreaker:100, size:'8sq'},
+  {groundType:'C種', wireType:'CV', maxBreaker:200, size:'14sq'},
+  {groundType:'D種', wireType:'CV', maxBreaker:100, size:'5.5sq'},
+  {groundType:'D種', wireType:'CV', maxBreaker:200, size:'8sq'}
 ];
 
-const DEFAULT_STATE = {
-  calculationType: 'power',
-  powerSystem: '3φ3W',
-  voltage: '200V',
-  powerFactor: 0.8,
-  efficiency: 0.9,
-  wiringLength: 30,
-  breakerRating: 50,
-  projectName: '',
-  projectRemarks: '',
-  cableType: 'CVT',
-  cableSize: 14,
-  installationMethod: '気中敷設',
-  sunlightCondition: '日射なし',
-  ambientTemperature: 40,
-  multiCircuit: false,
-  circuitCount: 1,
-  arrangementSpacing: '密着',
-  loads: [{id: crypto.randomUUID(), name:'負荷1', inputType:'kW', value:3.91}],
-  lastResult: null
+const CABLE_DATA = {
+  'CV-1C': {
+    3.5:{outerDiameter:7.0,massKgKm:74,resistance:5.20,ampacity:44},
+    5.5:{outerDiameter:8.0,massKgKm:105,resistance:3.33,ampacity:58},
+    8:{outerDiameter:8.6,massKgKm:130,resistance:2.31,ampacity:72},
+    14:{outerDiameter:9.4,massKgKm:195,resistance:1.31,ampacity:100},
+    22:{outerDiameter:11.0,massKgKm:280,resistance:0.832,ampacity:130},
+    38:{outerDiameter:13.0,massKgKm:445,resistance:0.481,ampacity:190},
+    60:{outerDiameter:15.5,massKgKm:655,resistance:0.305,ampacity:255},
+    100:{outerDiameter:19.0,massKgKm:1100,resistance:0.183,ampacity:355},
+    150:{outerDiameter:22.0,massKgKm:1550,resistance:0.122,ampacity:455},
+    200:{outerDiameter:26.0,massKgKm:2050,resistance:0.0915,ampacity:545},
+    250:{outerDiameter:28.0,massKgKm:2500,resistance:0.0739,ampacity:620},
+    325:{outerDiameter:31.0,massKgKm:3200,resistance:0.0568,ampacity:725}
+  },
+  'CV-2C': {
+    8:{outerDiameter:19.0,massKgKm:260,resistance:2.36,ampacity:66},
+    14:{outerDiameter:19.0,massKgKm:375,resistance:1.34,ampacity:91},
+    22:{outerDiameter:22.0,massKgKm:550,resistance:0.849,ampacity:120},
+    38:{outerDiameter:26.0,massKgKm:865,resistance:0.491,ampacity:165},
+    60:{outerDiameter:31.0,massKgKm:1330,resistance:0.311,ampacity:225},
+    100:{outerDiameter:38.0,massKgKm:2130,resistance:0.187,ampacity:310},
+    150:{outerDiameter:44.0,massKgKm:3030,resistance:0.124,ampacity:400},
+    200:{outerDiameter:51.0,massKgKm:4040,resistance:0.0933,ampacity:490},
+    250:{outerDiameter:56.0,massKgKm:4930,resistance:0.0754,ampacity:565},
+    325:{outerDiameter:61.0,massKgKm:6300,resistance:0.0579,ampacity:670},
+    400:{outerDiameter:67.0,massKgKm:8380,resistance:0.0471,ampacity:765},
+    500:{outerDiameter:75.0,massKgKm:10470,resistance:0.0376,ampacity:880}
+  },
+  'CV-3C': {
+    8:{outerDiameter:18.5,massKgKm:390,resistance:2.36,ampacity:62},
+    14:{outerDiameter:21.0,massKgKm:560,resistance:1.34,ampacity:86},
+    22:{outerDiameter:24.0,massKgKm:820,resistance:0.849,ampacity:110},
+    38:{outerDiameter:28.0,massKgKm:1300,resistance:0.491,ampacity:155},
+    60:{outerDiameter:33.0,massKgKm:1990,resistance:0.311,ampacity:210},
+    100:{outerDiameter:41.0,massKgKm:3190,resistance:0.187,ampacity:290},
+    150:{outerDiameter:47.0,massKgKm:4540,resistance:0.124,ampacity:380},
+    200:{outerDiameter:55.0,massKgKm:6060,resistance:0.0933,ampacity:465},
+    250:{outerDiameter:60.0,massKgKm:7420,resistance:0.0754,ampacity:535},
+    325:{outerDiameter:66.0,massKgKm:9450,resistance:0.0579,ampacity:635},
+    400:{outerDiameter:72.0,massKgKm:12570,resistance:0.0471,ampacity:725},
+    500:{outerDiameter:80.0,massKgKm:14720,resistance:0.0376,ampacity:835}
+  },
+  'CV-4C': {
+    14:{outerDiameter:23.0,massKgKm:750,resistance:1.34,ampacity:86},
+    22:{outerDiameter:27.0,massKgKm:1100,resistance:0.849,ampacity:110},
+    38:{outerDiameter:31.0,massKgKm:1730,resistance:0.491,ampacity:155},
+    60:{outerDiameter:37.0,massKgKm:2650,resistance:0.311,ampacity:210},
+    100:{outerDiameter:46.0,massKgKm:4250,resistance:0.187,ampacity:290},
+    150:{outerDiameter:53.0,massKgKm:6050,resistance:0.124,ampacity:380},
+    200:{outerDiameter:62.0,massKgKm:8070,resistance:0.0933,ampacity:465},
+    250:{outerDiameter:67.0,massKgKm:9890,resistance:0.0754,ampacity:535},
+    325:{outerDiameter:74.0,massKgKm:12590,resistance:0.0579,ampacity:635},
+    400:{outerDiameter:80.0,massKgKm:16760,resistance:0.0471,ampacity:725},
+    500:{outerDiameter:90.0,massKgKm:20940,resistance:0.0376,ampacity:835}
+  }
 };
 
-let appState = load(STORAGE.appState, structuredClone(DEFAULT_STATE));
-let historyItems = load(STORAGE.history, []);
-let savedItems = load(STORAGE.saved, []);
+const DOC_SECTIONS = [
+  {
+    id:'ampacity',
+    title:'ケーブルサイズ・ケーブル許容電流一覧表',
+    note:'基準条件：周囲温度40℃・1条の参考値です。最終判断は現場条件・法令・仕様を確認してください。',
+    buildRows(){
+      const rows = [];
+      Object.entries(CABLE_DATA).forEach(([type, items]) => {
+        Object.entries(items).forEach(([size, info]) => {
+          rows.push({ cableType:type, sizeSq:size, ampacity:info.ampacity });
+        });
+      });
+      return {headers:['ケーブル種類','ケーブルサイズ [sq]','許容電流 [A]'], rows};
+    }
+  },
+  {
+    id:'physical',
+    title:'ケーブル外径・概算質量一覧表',
+    note:'外径・概算質量は参考値です。ラック・支持条件の最終判断は別途確認してください。',
+    buildRows(){
+      const rows = [];
+      Object.entries(CABLE_DATA).forEach(([type, items]) => {
+        Object.entries(items).forEach(([size, info]) => {
+          rows.push({ cableType:type, sizeSq:size, outerDiameter:info.outerDiameter, massKgKm:info.massKgKm });
+        });
+      });
+      return {headers:['ケーブル種類','ケーブルサイズ [sq]','外径 [mm]','概算質量 [kg/km]'], rows};
+    }
+  }
+];
+
+const DEFAULT_UI = {
+  calculationType:'power',
+  calcMode:'',
+  powerSystem:'',
+  voltage:'',
+  powerFactor:'',
+  efficiency:'',
+  wiringLength:'',
+  existingBreaker:'',
+  projectName:'',
+  projectRemarks:'',
+  loadCount:'',
+  cableType:'',
+  cableSize:'',
+  baseAmpacity:'',
+  ampacityMode:'none',
+  installationMethod:'',
+  layingCondition:'',
+  ambientTemperature:'',
+  parallelCount:'',
+  loads:[],
+  lastResult:null,
+  compareBaseId:''
+};
+
+let state = loadJson(STORAGE.ui, structuredClone(DEFAULT_UI));
+let historyItems = loadJson(STORAGE.history, []);
+let savedItems = loadJson(STORAGE.saved, []);
 let compareIds = [];
 let deferredPrompt = null;
 let disclaimerStep = 0;
 
-const els = id => document.getElementById(id);
-
+const $ = (id) => document.getElementById(id);
 const screens = {
-  calc: els('screen-calc'),
-  docs: els('screen-docs'),
-  saved: els('screen-saved'),
-  settings: els('screen-settings')
+  calc: $('screen-calc'),
+  docs: $('screen-docs'),
+  saved: $('screen-saved'),
+  settings: $('screen-settings')
 };
+const resultFieldIds = [];
 
-function load(key, fallback) {
+function loadJson(key, fallback){
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
@@ -145,450 +174,655 @@ function load(key, fallback) {
   }
 }
 
-function persist() {
-  localStorage.setItem(STORAGE.appState, JSON.stringify(appState));
+function persistState(){
+  localStorage.setItem(STORAGE.ui, JSON.stringify(state));
   localStorage.setItem(STORAGE.history, JSON.stringify(historyItems));
   localStorage.setItem(STORAGE.saved, JSON.stringify(savedItems));
 }
 
-function formatNumber(value, digits = 2) {
-  if (value === null || value === undefined || Number.isNaN(value)) return '-';
-  return new Intl.NumberFormat('ja-JP', {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: 0
-  }).format(value);
+function formatNumber(value, digits=2){
+  if (value === null || value === undefined || value === '' || Number.isNaN(Number(value))) return '-';
+  return new Intl.NumberFormat('ja-JP', {maximumFractionDigits:digits, minimumFractionDigits:0}).format(Number(value));
 }
 
-function showToast(message) {
-  const toast = els('toast');
+function showToast(message){
+  const toast = $('toast');
   toast.textContent = message;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 1800);
 }
 
-function isThreePhase(system) {
-  return system.startsWith('3φ');
+function setSelectOptions(el, options, placeholder='選択してください', selected=''){
+  const html = [`<option value="">${placeholder}</option>`]
+    .concat(options.map(opt => {
+      if (typeof opt === 'object') return `<option value="${opt.value}">${opt.label}</option>`;
+      return `<option value="${opt}">${opt}</option>`;
+    }))
+    .join('');
+  el.innerHTML = html;
+  el.value = selected || '';
 }
 
-function coreTypeFromCalcType(type) {
-  return type === 'power' ? '3C' : '2C';
+function getCableSizes(cableType){
+  if (!cableType || !CABLE_DATA[cableType]) return [];
+  return Object.keys(CABLE_DATA[cableType]).map(Number).sort((a,b) => a-b);
 }
 
-function getAmpacity(cableType, calcType, sizeSq) {
-  return MASTER.cableAmpacity.find(v =>
-    v.cableType === cableType &&
-    v.coreType === coreTypeFromCalcType(calcType) &&
-    Number(v.sizeSq) === Number(sizeSq)
-  );
+function getCableInfo(cableType, size){
+  if (!cableType || !size || !CABLE_DATA[cableType]) return null;
+  return CABLE_DATA[cableType][size] || null;
 }
 
-function getImpedance(cableType, calcType, sizeSq) {
-  return MASTER.impedance.find(v =>
-    v.cableType === cableType &&
-    v.coreType === coreTypeFromCalcType(calcType) &&
-    Number(v.sizeSq) === Number(sizeSq)
-  );
-}
-
-function getDiameter(cableType, calcType, sizeSq) {
-  return MASTER.diameters.find(v =>
-    v.cableType === cableType &&
-    v.coreType === coreTypeFromCalcType(calcType) &&
-    Number(v.sizeSq) === Number(sizeSq)
-  );
-}
-
-function getDerating(state) {
-  return MASTER.derating.find(v =>
-    v.installationMethod === state.installationMethod &&
-    v.sunlight === state.sunlightCondition &&
-    Number(v.temperature) === Number(state.ambientTemperature) &&
-    v.multi === Boolean(state.multiCircuit) &&
-    Number(v.count) === Number(state.circuitCount) &&
-    v.spacing === state.arrangementSpacing
-  ) || MASTER.derating.find(v =>
-    v.installationMethod === state.installationMethod &&
-    v.sunlight === state.sunlightCondition &&
-    Number(v.temperature) === Number(state.ambientTemperature) &&
-    !v.multi &&
-    Number(v.count) === 1
-  );
-}
-
-function getConduit(diameter, count) {
-  return MASTER.conduit.find(v => diameter <= v.diameterMax && count <= v.count)?.conduit ||
-         MASTER.conduit.find(v => diameter <= v.diameterMax)?.conduit ||
-         '要確認';
-}
-
-function getRack(diameter, count) {
-  return MASTER.rack.find(v => diameter <= v.diameterMax && count <= v.count)?.rack ||
-         MASTER.rack.find(v => diameter <= v.diameterMax)?.rack ||
-         '要確認';
-}
-
-function convertLoad(load, state) {
-  const voltage = parseFloat(state.voltage);
-  const pf = Number(state.powerFactor);
-  const eff = Number(state.efficiency);
-  const value = Number(load.value);
-  let current = 0;
-  let kw = 0;
-  let kva = 0;
-
-  if (load.inputType === 'kW') {
-    kw = value;
-    current = isThreePhase(state.powerSystem)
-      ? (kw * 1000) / (Math.sqrt(3) * voltage * pf * eff)
-      : (kw * 1000) / (voltage * pf * eff);
-    kva = kw / Math.max(pf * eff, 0.0001);
-  } else if (load.inputType === 'kVA') {
-    kva = value;
-    current = isThreePhase(state.powerSystem)
-      ? (kva * 1000) / (Math.sqrt(3) * voltage)
-      : (kva * 1000) / voltage;
-    kw = kva * pf * eff;
-  } else {
-    current = value;
-    kva = isThreePhase(state.powerSystem)
-      ? Math.sqrt(3) * voltage * current / 1000
-      : voltage * current / 1000;
-    kw = kva * pf * eff;
-  }
-
-  return { ...load, kw, kva, current };
-}
-
-function calcVoltageDrop(current, impedance, lengthM, voltage, system) {
-  const dropV = isThreePhase(system)
-    ? Math.sqrt(3) * current * impedance * lengthM / 1000
-    : 2 * current * impedance * lengthM / 1000;
-
+function createBlankLoad(index){
   return {
-    dropV,
-    dropPercent: (dropV / voltage) * 100
+    id: crypto.randomUUID(),
+    title:`負荷${index + 1}`,
+    name:'',
+    inputType:'',
+    value:'',
+    current:''
   };
 }
 
-function nextBreaker(current) {
-  return MASTER.breakers.find(v => v >= current) || MASTER.breakers[MASTER.breakers.length - 1];
+function normalizeLoads(){
+  const target = Number(state.loadCount || 0);
+  if (!target) {
+    state.loads = [];
+    return;
+  }
+  if (state.loads.length < target) {
+    while (state.loads.length < target) state.loads.push(createBlankLoad(state.loads.length));
+  } else if (state.loads.length > target) {
+    state.loads = state.loads.slice(0, target);
+  }
+  state.loads.forEach((load, i) => load.title = `負荷${i + 1}`);
 }
 
-function judgement(totalCurrent, correctedAmpacity, dropPercent, breakerRating) {
-  return totalCurrent <= correctedAmpacity &&
-         totalCurrent <= breakerRating &&
-         dropPercent <= 5
-    ? '良'
-    : '否';
+function currentForLoad(load){
+  const value = Number(load.value);
+  const voltage = Number(state.voltage);
+  const pf = Number(state.powerFactor);
+  const eff = Number(state.efficiency);
+  if (!value || !voltage || !pf || !eff) return '';
+  if (load.inputType === 'A') return value;
+  if (load.inputType === 'kVA') {
+    return isThreePhase() ? (value * 1000) / (Math.sqrt(3) * voltage) : (value * 1000) / voltage;
+  }
+  if (load.inputType === 'kW') {
+    return isThreePhase() ? (value * 1000) / (Math.sqrt(3) * voltage * pf * eff) : (value * 1000) / (voltage * pf * eff);
+  }
+  return '';
 }
 
-function buildNotes(result) {
-  const notes = [
-    '参考配管サイズは一般的な電気設計の参考値です。',
-    '参考ケーブルラック選定案は参考表示です。',
-    '接地線サイズ選定は低圧 C種・D種のみ対象です。'
-  ];
+function kwForLoad(load){
+  const value = Number(load.value);
+  const pf = Number(state.powerFactor);
+  const eff = Number(state.efficiency);
+  if (!value || !pf || !eff) return '';
+  if (load.inputType === 'kW') return value;
+  if (load.inputType === 'kVA') return value * pf * eff;
+  if (load.inputType === 'A') {
+    const voltage = Number(state.voltage);
+    if (!voltage) return '';
+    const kva = isThreePhase() ? (Math.sqrt(3) * voltage * value / 1000) : (voltage * value / 1000);
+    return kva * pf * eff;
+  }
+  return '';
+}
 
-  if (result.totalCurrent > result.correctedAmpacity) notes.push('許容電流を超過しています。');
-  if (result.totalCurrent > result.breakerRating) notes.push('主幹ブレーカー容量を超過しています。');
-  if (result.dropPercent > 5) notes.push('電圧降下が大きいため、配線条件の見直しが必要です。');
+function kvaForLoad(load){
+  const value = Number(load.value);
+  const pf = Number(state.powerFactor);
+  const eff = Number(state.efficiency);
+  if (!value || !pf || !eff) return '';
+  if (load.inputType === 'kVA') return value;
+  if (load.inputType === 'kW') return value / (pf * eff);
+  if (load.inputType === 'A') {
+    const voltage = Number(state.voltage);
+    if (!voltage) return '';
+    return isThreePhase() ? (Math.sqrt(3) * voltage * value / 1000) : (voltage * value / 1000);
+  }
+  return '';
+}
 
+function isThreePhase(){
+  return String(state.powerSystem).startsWith('3φ');
+}
+
+function sizingCurrentBase(){
+  const required = requiredBreakerFromLoad();
+  const existing = Number(state.existingBreaker || 0);
+  if (state.calcMode === 'existing') return existing || required;
+  return required;
+}
+
+function requiredBreakerFromLoad(){
+  const totalCurrent = getLoadSummary().totalCurrent;
+  if (!totalCurrent) return 0;
+  return BREAKER_SIZES.find(v => v >= totalCurrent) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
+}
+
+function adoptedBreaker(){
+  const required = requiredBreakerFromLoad();
+  const existing = Number(state.existingBreaker || 0);
+  return state.calcMode === 'existing' ? existing : required;
+}
+
+function getCorrectionBreakdown(){
+  const temp = Number(state.ambientTemperature || 0);
+  const par = Number(state.parallelCount || 0);
+  const temperature = TEMP_COEF[temp] ?? null;
+  const parallel = PARALLEL_COEF[par] ?? null;
+  const method = METHOD_COEF[state.installationMethod] ?? null;
+  const condition = CONDITION_COEF[state.layingCondition] ?? null;
+  const final = [temperature, parallel, method, condition].every(v => v != null)
+    ? temperature * parallel * method * condition
+    : null;
+  return { temperature, parallel, method, condition, final };
+}
+
+function basisAmpacity(){
+  const manual = Number(state.baseAmpacity);
+  return manual || 0;
+}
+
+function correctedAmpacity(){
+  const basis = Number(state.baseAmpacity);
+  const breakdown = getCorrectionBreakdown();
+  if (!basis || !breakdown.final) return 0;
+  return basis * breakdown.final;
+}
+
+function getLoadSummary(){
+  const list = state.loads.map(load => ({
+    ...load,
+    current: currentForLoad(load),
+    kw: kwForLoad(load),
+    kva: kvaForLoad(load)
+  }));
+  return {
+    list,
+    totalCurrent: list.reduce((s, v) => s + (Number(v.current) || 0), 0),
+    totalKW: list.reduce((s, v) => s + (Number(v.kw) || 0), 0),
+    totalKVA: list.reduce((s, v) => s + (Number(v.kva) || 0), 0)
+  };
+}
+
+function calcVoltageDrop(current, resistance, lengthM){
+  const voltage = Number(state.voltage);
+  if (!current || !resistance || !lengthM || !voltage) return { dropV:0, dropPercent:0 };
+  const dropV = isThreePhase() ? (Math.sqrt(3) * current * resistance * lengthM / 1000) : (2 * current * resistance * lengthM / 1000);
+  return { dropV, dropPercent:(dropV / voltage) * 100 };
+}
+
+function rackWidthFor(outerDiameter, count){
+  if (!outerDiameter || !count) return '';
+  const occupied = outerDiameter * count * 1.35;
+  const width = RACK_WIDTHS.find(v => v >= occupied) || RACK_WIDTHS[RACK_WIDTHS.length - 1];
+  return `W${width}`;
+}
+
+function suggestedCableSelection(){
+  const type = state.cableType;
+  const sizes = getCableSizes(type);
+  if (!type || !sizes.length) return null;
+  const basisCurrent = sizingCurrentBase();
+  const length = Number(state.wiringLength);
+  const loadSummary = getLoadSummary();
+  const breakdown = getCorrectionBreakdown();
+  if (!basisCurrent || !length || !breakdown.final) return null;
+
+  const candidates = sizes.map(size => {
+    const info = getCableInfo(type, size);
+    const baseAmp = state.ampacityMode === 'manual' && Number(state.baseAmpacity) && Number(state.cableSize) === Number(size)
+      ? Number(state.baseAmpacity)
+      : Number(info?.ampacity || 0);
+    const corrected = baseAmp * breakdown.final;
+    const drop = calcVoltageDrop(loadSummary.totalCurrent, Number(info?.resistance || 0), length);
+    const currentOk = corrected >= basisCurrent;
+    const dropOk = drop.dropPercent <= DROP_LIMIT_PERCENT;
+    return { size, info, baseAmp, corrected, drop, currentOk, dropOk };
+  });
+
+  const valid = candidates.find(c => c.currentOk && c.dropOk);
+  return { valid, candidates };
+}
+
+function primaryFactor(candidate){
+  if (!candidate) return '-';
+  const ratioCurrent = candidate.corrected ? sizingCurrentBase() / candidate.corrected : 0;
+  const ratioDrop = candidate.drop.dropPercent / DROP_LIMIT_PERCENT;
+  if (state.calcMode === 'existing') {
+    if (ratioDrop > ratioCurrent) return '電圧降下';
+    return '既設開閉器条件';
+  }
+  return ratioDrop > ratioCurrent ? '電圧降下' : '許容電流';
+}
+
+function allSelectionReasons(candidate){
+  if (!candidate) return [];
+  const reasons = [];
+  reasons.push('許容電流');
+  if (candidate.drop.dropPercent >= DROP_LIMIT_PERCENT * 0.7) reasons.push('電圧降下');
+  if (state.calcMode === 'existing') reasons.push('既設開閉器条件');
+  return [...new Set(reasons)];
+}
+
+function constructionNotes(totalMass){
+  const notes = [];
+  const length = Number(state.wiringLength || 0);
+  if (totalMass > 100) notes.push('概算総質量が大きいため、支持条件を確認してください。');
+  if (totalMass > 300) notes.push('ラック・支持材の耐荷重確認を推奨します。');
+  if (length > 100) notes.push('長尺配線のため、施工計画に注意してください。');
+  if (!notes.length) notes.push('概算質量は参考値です。最終的な施工計画は現場条件を確認してください。');
   return notes;
 }
 
-function calculate() {
-  const amp = getAmpacity(appState.cableType, appState.calculationType, appState.cableSize);
-  const der = getDerating(appState);
-  const imp = getImpedance(appState.cableType, appState.calculationType, appState.cableSize);
-  const dia = getDiameter(appState.cableType, appState.calculationType, appState.cableSize);
+function rootMemo(result){
+  const notes = ['参考値を使用しています。', '最終判断は現場条件・法令・仕様を確認してください。'];
+  notes.push(state.calcMode === 'existing' ? '既設条件を優先した計算です。' : '負荷容量から必要最小開閉器を算出しています。');
+  notes.push('技術資料タブの基準条件を参照してください。');
+  if (state.ampacityMode === 'manual') notes.push('基準許容電流は手動入力値を採用しています。');
+  return notes;
+}
 
-  if (!amp || !der || !imp || !dia) {
-    showToast('必要なマスタが見つかりません。');
+function missingFields(){
+  const missing = [];
+  const pushIf = (condition, label, id) => { if (condition) missing.push({label, id}); };
+
+  pushIf(!state.calcMode, '計算方式を選択してください。', 'calcMode');
+  pushIf(!state.powerSystem, '電源方式を選択してください。', 'powerSystem');
+  pushIf(!state.voltage, '電圧を選択してください。', 'voltage');
+  pushIf(!state.powerFactor, '力率を選択してください。', 'powerFactor');
+  pushIf(!state.efficiency, '効率を選択してください。', 'efficiency');
+  pushIf(!state.wiringLength, '配線長を入力してください。', 'wiringLength');
+  if (state.calcMode === 'existing') pushIf(!state.existingBreaker, '既設開閉器を選択してください。', 'existingBreaker');
+  pushIf(!state.loadCount, '負荷数を選択してください。', 'loadCount');
+  pushIf(!state.cableType, 'ケーブル種類を選択してください。', 'cableType');
+  pushIf(!state.cableSize, 'ケーブルサイズを選択してください。', 'cableSize');
+  pushIf(!state.baseAmpacity, '基準許容電流を入力してください。', 'baseAmpacity');
+  pushIf(!state.installationMethod, '敷設方法を選択してください。', 'installationMethod');
+  pushIf(!state.layingCondition, '敷設条件を選択してください。', 'layingCondition');
+  pushIf(!state.ambientTemperature, '環境温度を選択してください。', 'ambientTemperature');
+  pushIf(!state.parallelCount, '条数を選択してください。', 'parallelCount');
+
+  state.loads.forEach((load, index) => {
+    if (!load.name) missing.push({label:`負荷${index + 1}の負荷名称を入力してください。`, id:`load-name-${load.id}`});
+    if (!load.inputType) missing.push({label:`負荷${index + 1}の入力方式を選択してください。`, id:`load-type-${load.id}`});
+    if (!load.value && load.value !== 0) missing.push({label:`負荷${index + 1}の負荷値を入力してください。`, id:`load-value-${load.id}`});
+  });
+
+  return missing;
+}
+
+function clearInputErrors(){
+  document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+}
+
+function markMissingFields(list){
+  clearInputErrors();
+  list.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el) el.classList.add('input-error');
+  });
+}
+
+function updateResultError(message){
+  const box = $('resultErrorBox');
+  if (!message) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  box.classList.remove('hidden');
+  box.innerHTML = message;
+}
+
+function calculate(){
+  const missing = missingFields();
+  if (missing.length) {
+    markMissingFields(missing);
+    state.lastResult = null;
+    $('resultPanel').classList.remove('hidden');
+    updateResultError(`未入力項目がある為、計算出来ません。入力して下さい。<br>${missing.map(v => '・' + v.label).join('<br>')}`);
+    $('resultBody').classList.add('hidden');
+    persistState();
     return;
   }
 
-  const converted = appState.loads.map(load => convertLoad(load, appState));
-  const totalKW = converted.reduce((s, v) => s + v.kw, 0);
-  const totalKVA = converted.reduce((s, v) => s + v.kva, 0);
-  const totalCurrent = converted.reduce((s, v) => s + v.current, 0);
-  const correctedAmpacity = amp.ampacity * der.factor;
-  const voltage = parseFloat(appState.voltage);
-  const vd = calcVoltageDrop(
-    totalCurrent,
-    imp.value,
-    Number(appState.wiringLength),
-    voltage,
-    appState.powerSystem
-  );
+  const loadSummary = getLoadSummary();
+  const breakdown = getCorrectionBreakdown();
+  const selected = suggestedCableSelection();
+  const candidate = selected?.valid || selected?.candidates.at(-1) || null;
+  const baseAmp = Number(state.baseAmpacity);
+  const corrected = correctedAmpacity();
+  const requiredBreaker = requiredBreakerFromLoad();
+  const adopted = adoptedBreaker();
+  const breakerMarginPercent = adopted ? ((adopted - loadSummary.totalCurrent) / adopted) * 100 : 0;
+  const capacityMarginKW = (state.powerSystem.startsWith('3φ')
+    ? (Math.sqrt(3) * Number(state.voltage) * adopted * Number(state.powerFactor) * Number(state.efficiency) / 1000)
+    : (Number(state.voltage) * adopted * Number(state.powerFactor) * Number(state.efficiency) / 1000)) - loadSummary.totalKW;
+  const drop = candidate ? calcVoltageDrop(loadSummary.totalCurrent, Number(candidate.info?.resistance || 0), Number(state.wiringLength)) : {dropV:0,dropPercent:0};
+  const failReasons = [];
+  const currentOk = corrected >= sizingCurrentBase();
+  const breakerOk = requiredBreaker ? adopted >= requiredBreaker : true;
+  const dropOk = drop.dropPercent <= DROP_LIMIT_PERCENT;
+  if (!currentOk) failReasons.push(`許容電流不足（必要 ${formatNumber(sizingCurrentBase(),1)}A / 補正後許容 ${formatNumber(corrected,1)}A）`);
+  if (!breakerOk) failReasons.push(`開閉器容量不足（必要 ${requiredBreaker}A / 採用 ${adopted}A）`);
+  if (!dropOk) failReasons.push(`電圧降下超過（${formatNumber(drop.dropPercent,2)}% / 許容 ${DROP_LIMIT_PERCENT.toFixed(1)}%）`);
 
-  const breakerRating = Number(appState.breakerRating);
-
-  const breakerMarginPercent =
-    ((breakerRating - totalCurrent) / breakerRating) * 100;
-
-  const capacityMarginKW =
-    (isThreePhase(appState.powerSystem)
-      ? (Math.sqrt(3) * voltage * breakerRating * Number(appState.powerFactor) * Number(appState.efficiency) / 1000)
-      : (voltage * breakerRating * Number(appState.powerFactor) * Number(appState.efficiency) / 1000)
-    ) - totalKW;
-
+  const totalMass = (Number(candidate?.info?.massKgKm || 0) / 1000) * Number(state.wiringLength || 0) * Number(state.parallelCount || 1);
   const result = {
-    calculationType: appState.calculationType,
-    loadCount: converted.length,
-    convertedLoads: converted,
-    totalKW,
-    totalKVA,
-    totalCurrent,
-    baseAmpacity: amp.ampacity,
-    deratingFactor: der.factor,
-    correctedAmpacity,
-    impedance: imp.value,
-    cableDiameter: dia.value,
-    dropV: vd.dropV,
-    dropPercent: vd.dropPercent,
+    calculatedAt: new Date().toISOString(),
+    mode: state.calcMode,
+    totalCurrent: loadSummary.totalCurrent,
+    totalKW: loadSummary.totalKW,
+    totalKVA: loadSummary.totalKVA,
+        requiredBreaker,
+    adoptedBreaker: adopted,
     breakerMarginPercent,
     capacityMarginKW,
-    recommendedBreaker: nextBreaker(totalCurrent),
-    recommendedCableSize: appState.cableSize,
-    conduit: getConduit(dia.value, 1),
-    rack: getRack(dia.value, 1),
-    judgement: judgement(totalCurrent, correctedAmpacity, vd.dropPercent, breakerRating),
-    notes: [],
-    breakerRating
+    voltageDropV: drop.dropV,
+    voltageDropPercent: drop.dropPercent,
+    baseAmpacity: baseAmp,
+    correctedAmpacity: corrected,
+    cableType: state.cableType,
+    cableSize: candidate?.size || state.cableSize,
+    correctionBreakdown: breakdown,
+    reasons: allSelectionReasons(candidate),
+    mainFactor: primaryFactor(candidate),
+    failReasons,
+    judgement: failReasons.length ? '否' : '良',
+    existingBreaker: state.existingBreaker || '',
+    existingBreakerJudge: state.calcMode === 'existing'
+      ? (breakerOk ? '適合' : '否')
+      : '-',
+    cableJudge: currentOk && dropOk ? '適合' : '否',
+    rackWidth: candidate?.info?.outerDiameter
+      ? rackWidthFor(Number(candidate.info.outerDiameter), Number(state.parallelCount || 1))
+      : '-',
+    massKgM: candidate?.info?.massKgKm ? Number(candidate.info.massKgKm) / 1000 : 0,
+    massTotalKg: totalMass,
+    constructionNotes: constructionNotes(totalMass),
+    rootMemo: rootMemo(),
+    loadDetails: loadSummary.list
   };
 
-  result.notes = buildNotes(result);
-  appState.lastResult = result;
-  persist();
-  renderAutoValues();
-  renderResult();
+  state.lastResult = result;
 
   historyItems.unshift({
     id: crypto.randomUUID(),
-    title: appState.calculationType === 'power'
-      ? '低圧動力幹線計算'
-      : '低圧電灯幹線計算',
+    title: `${state.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'}_${new Date().toLocaleString('sv-SE').replace(/[: ]/g,'_')}`,
+    memo: '',
     savedAt: new Date().toISOString(),
-    input: structuredClone(appState),
-    result
+    input: structuredClone(state),
+    result: structuredClone(result),
+    calculationMode: state.calcMode,
+    versions: structuredClone(VERSIONS)
   });
 
   historyItems = historyItems.slice(0, 50);
-  persist();
+  persistState();
+  $('resultPanel').classList.remove('hidden');
+  $('resultBody').classList.remove('hidden');
+  updateResultError('');
+  renderResult();
   renderSaved();
-  showToast('計算して履歴に保存しました。');
 }
 
-function renderAutoValues() {
-  const result = appState.lastResult;
-  els('baseAmpacityText').textContent = result ? formatNumber(result.baseAmpacity) : '-';
-  els('deratingFactorText').textContent = result ? formatNumber(result.deratingFactor, 3) : '-';
-  els('correctedAmpacityText').textContent = result ? formatNumber(result.correctedAmpacity) : '-';
-  els('impedanceText').textContent = result ? formatNumber(result.impedance, 3) : '-';
-  els('diameterText').textContent = result ? formatNumber(result.cableDiameter, 1) : '-';
-}
-
-function renderResult() {
-  const r = appState.lastResult;
+function renderResult(){
+  const r = state.lastResult;
   if (!r) return;
 
-  els('resLoadCount').textContent = formatNumber(r.loadCount, 0);
-  els('resTotalKW').textContent = formatNumber(r.totalKW, 3);
-  els('resTotalKVA').textContent = formatNumber(r.totalKVA, 3);
-  els('resTotalCurrent').textContent = formatNumber(r.totalCurrent, 2);
-  els('resDropV').textContent = formatNumber(r.dropV, 2);
-  els('resDropPct').textContent = formatNumber(r.dropPercent, 2);
-  els('resBreakerMargin').textContent = formatNumber(r.breakerMarginPercent, 1);
-  els('resCapacityMargin').textContent = formatNumber(r.capacityMarginKW, 2);
-  els('resRecommendedBreaker').textContent = `${r.recommendedBreaker}A`;
-  els('resRecommendedCable').textContent = `${r.recommendedCableSize}sq`;
-  els('resConduit').textContent = r.conduit;
-  els('resRack').textContent = r.rack;
+  $('resLoadCount').textContent = String(state.loads.length || 0);
+  $('resTotalKW').textContent = formatNumber(r.totalKW, 3);
+  $('resTotalKVA').textContent = formatNumber(r.totalKVA, 3);
+  $('resTotalCurrent').textContent = formatNumber(r.totalCurrent, 2);
+  $('resRequiredBreaker').textContent = r.requiredBreaker ? `${r.requiredBreaker}A` : '-';
+  $('resAdoptedBreaker').textContent = r.adoptedBreaker ? `${r.adoptedBreaker}A` : '-';
+  $('resDropV').textContent = formatNumber(r.voltageDropV, 2);
+  $('resDropPct').textContent = formatNumber(r.voltageDropPercent, 2);
+  $('resBreakerMargin').textContent = formatNumber(r.breakerMarginPercent, 2);
+  $('resCapacityMargin').textContent = formatNumber(r.capacityMarginKW, 2);
+  $('resSelectedCable').textContent = `${r.cableType || '-'} ${r.cableSize ? `${r.cableSize}sq` : '-'}`;
+  $('resMainFactor').textContent = r.mainFactor || '-';
 
-  const j = els('resJudgement');
-  j.textContent = r.judgement;
-  j.className = 'judgement ' + (r.judgement === '良' ? 'good' : 'bad');
+  const judge = $('resJudgement');
+  judge.textContent = r.judgement;
+  judge.className = `judgement ${r.judgement === '良' ? 'good' : 'bad'}`;
 
-  const notes = els('resNotes');
-  notes.innerHTML = '';
-  r.notes.forEach(n => {
-    const li = document.createElement('li');
-    li.textContent = n;
-    notes.appendChild(li);
+  $('resExistingBreaker').innerHTML = r.existingBreaker ? `${r.existingBreaker}A` : '-';
+  $('resRequiredBreaker2').innerHTML = r.requiredBreaker ? `${r.requiredBreaker}A` : '-';
+  $('resExistingBreakerJudge').innerHTML = statusSpan(r.existingBreakerJudge);
+  $('resCableJudge').innerHTML = statusSpan(r.cableJudge);
+
+  $('resBaseAmpacity').textContent = formatNumber(r.baseAmpacity, 2);
+  $('resFinalCoef').textContent = formatNumber(r.correctionBreakdown.final, 3);
+  $('resCorrectedAmpacity').textContent = formatNumber(r.correctedAmpacity, 2);
+  $('resAdoptedCable2').textContent = `${r.cableType || '-'} ${r.cableSize ? `${r.cableSize}sq` : '-'}`;
+  $('resReasons').textContent = r.reasons.length ? r.reasons.join('、') : '-';
+
+  const failRoot = $('resFailReasons');
+  failRoot.innerHTML = '';
+  if (!r.failReasons.length) {
+    const ok = document.createElement('div');
+    ok.className = 'readonly-box compact-box';
+    ok.innerHTML = '<strong class="status-ok">不適合項目はありません。</strong>';
+    failRoot.appendChild(ok);
+  } else {
+    r.failReasons.forEach(reason => {
+      const div = document.createElement('div');
+      div.className = 'fail-item';
+      div.textContent = reason;
+      failRoot.appendChild(div);
+    });
+  }
+
+  const loadRoot = $('loadResultList');
+  loadRoot.innerHTML = '';
+  r.loadDetails.forEach((item, index) => {
+    const card = document.createElement('div');
+    card.className = 'load-result-card';
+    card.innerHTML = `
+      <div class="row">
+        <strong>負荷${index + 1}</strong>
+        <span class="muted">${escapeHtml(item.name || '-')}</span>
+      </div>
+      <div class="readonly-grid top-gap">
+        <div><span>入力方式</span><strong>${item.inputType || '-'}</strong></div>
+        <div><span>負荷値</span><strong>${item.value || '-'} ${item.inputType || ''}</strong></div>
+        <div><span>換算電流 [A]</span><strong>${formatNumber(item.current, 2)}</strong></div>
+      </div>
+    `;
+    loadRoot.appendChild(card);
+  });
+
+  const noteRoot = $('resConstructionNotes');
+  noteRoot.innerHTML = '';
+  r.constructionNotes.forEach(note => {
+    const div = document.createElement('div');
+    div.className = 'readonly-box compact-box';
+    div.innerHTML = `<strong class="muted">${escapeHtml(note)}</strong>`;
+    noteRoot.appendChild(div);
+  });
+
+  const memoRoot = $('resRootMemo');
+  memoRoot.innerHTML = '';
+  r.rootMemo.forEach(note => {
+    const div = document.createElement('div');
+    div.className = 'readonly-box compact-box';
+    div.innerHTML = `<strong class="muted">${escapeHtml(note)}</strong>`;
+    memoRoot.appendChild(div);
   });
 }
 
-function defaultSaveTitle() {
-  const prefix = appState.calculationType === 'power'
-    ? '低圧動力幹線計算'
-    : '低圧電灯幹線計算';
-
-  const d = new Date();
-  const pad = n => String(n).padStart(2, '0');
-
-  return `${prefix}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+function statusSpan(text){
+  if (text === '適合' || text === '良') return `<span class="status-ok">${text}</span>`;
+  if (text === '否') return `<span class="status-ng">${text}</span>`;
+  return `<span class="muted">${text || '-'}</span>`;
 }
 
-function openSaveDialog() {
-  if (!appState.lastResult) {
-    showToast('先に計算してください。');
+function renderLoadCards(){
+  normalizeLoads();
+  const root = $('loadCards');
+  root.innerHTML = '';
+  $('loadPositionLabel').textContent = state.loads.length ? `1 / ${state.loads.length}` : '- / -';
+
+  if (!state.loads.length) {
+    root.innerHTML = '<div class="load-card muted">負荷数を選択してください。</div>';
     return;
   }
 
-  els('saveTitleInput').value = defaultSaveTitle();
-  els('saveMemoInput').value = '';
-  els('saveDialog').showModal();
-}
+  state.loads.forEach((load, index) => {
+    const card = document.createElement('div');
+    card.className = 'load-card';
+    card.innerHTML = `
+      <div class="row">
+        <strong>${load.title}</strong>
+        <span class="muted">${index + 1} / ${state.loads.length}</span>
+      </div>
 
-function confirmSave() {
-  const title = els('saveTitleInput').value.trim();
-  const memo = els('saveMemoInput').value.trim();
+      <div class="grid two top-gap">
+        <label>
+          <span>負荷名称</span>
+          <input id="load-name-${load.id}" type="text" value="${escapeHtml(load.name)}" />
+        </label>
 
-  if (!title) {
-    showToast('保存名を入力してください。');
-    return;
-  }
+        <label>
+          <span>入力方式</span>
+          <select id="load-type-${load.id}"></select>
+        </label>
 
-  savedItems.unshift({
-    id: crypto.randomUUID(),
-    title,
-    memo,
-    savedAt: new Date().toISOString(),
-    input: structuredClone(appState),
-    result: structuredClone(appState.lastResult)
-  });
+        <label>
+          <span>負荷値</span>
+          <input id="load-value-${load.id}" type="number" inputmode="decimal" value="${load.value === '' ? '' : escapeHtml(load.value)}" />
+        </label>
 
-  persist();
-  renderSaved();
-  els('saveDialog').close();
-  showToast('保存しました。');
-}
+        <div class="readonly-box compact-box">
+          <span>入力方式</span>
+          <strong id="load-type-label-${load.id}">${load.inputType || '-'}</strong>
+        </div>
+      </div>
 
-function openDocument(doc) {
-  els('docsDialogTitle').textContent = doc.title;
-  const body = els('docsDialogBody');
-  body.innerHTML = `<p class="muted">${doc.summary}</p>`;
+      <div class="readonly-grid top-gap">
+        <div><span>換算電流 [A]</span><strong id="load-current-${load.id}">${formatNumber(currentForLoad(load), 2)}</strong></div>
+      </div>
+    `;
 
-  doc.sections.forEach(section => {
-    const wrap = document.createElement('section');
-    wrap.className = 'docs-section';
-    wrap.innerHTML = `<h4>${section.heading}</h4>`;
+    root.appendChild(card);
 
-    if (section.paragraphs) {
-      section.paragraphs.forEach(p => {
-        const el = document.createElement('p');
-        el.textContent = p;
-        wrap.appendChild(el);
-      });
-    }
+    const nameInput = document.getElementById(`load-name-${load.id}`);
+    const typeSelect = document.getElementById(`load-type-${load.id}`);
+    const valueInput = document.getElementById(`load-value-${load.id}`);
 
-    if (section.bullets && section.bullets.length) {
-      const ul = document.createElement('ul');
-      section.bullets.forEach(b => {
-        const li = document.createElement('li');
-        li.textContent = b;
-        ul.appendChild(li);
-      });
-      wrap.appendChild(ul);
-    }
+    setSelectOptions(typeSelect, ['kW','A','kVA'], '選択してください', load.inputType);
 
-    body.appendChild(wrap);
-  });
-
-  els('docsDialog').showModal();
-}
-
-function renderDocs() {
-  const search = els('docsSearch').value.trim().toLowerCase();
-  const groups = {};
-
-  DOCS
-    .filter(doc => !search || `${doc.title} ${doc.summary} ${JSON.stringify(doc.sections)}`.toLowerCase().includes(search))
-    .forEach(doc => {
-      groups[doc.group] ||= [];
-      groups[doc.group].push(doc);
+    nameInput.addEventListener('input', () => {
+      load.name = nameInput.value;
+      validateRealtime();
+      persistState();
     });
 
-  const root = els('docsGroups');
+    typeSelect.addEventListener('change', () => {
+      load.inputType = typeSelect.value;
+      document.getElementById(`load-type-label-${load.id}`).textContent = load.inputType || '-';
+      document.getElementById(`load-current-${load.id}`).textContent = formatNumber(currentForLoad(load), 2);
+      validateRealtime();
+      persistState();
+    });
+
+    wireNumericInput(valueInput, () => {
+      load.value = valueInput.value;
+      document.getElementById(`load-current-${load.id}`).textContent = formatNumber(currentForLoad(load), 2);
+      validateRealtime();
+      persistState();
+    });
+  });
+
+  root.addEventListener('scroll', updateLoadPositionLabel, { passive: true });
+}
+
+function updateLoadPositionLabel(){
+  const root = $('loadCards');
+  const children = [...root.children];
+  if (!children.length) return;
+
+  let closest = 0;
+  let best = Infinity;
+
+  children.forEach((el, index) => {
+    const diff = Math.abs(el.getBoundingClientRect().left - root.getBoundingClientRect().left);
+    if (diff < best) {
+      best = diff;
+      closest = index;
+    }
+  });
+
+  $('loadPositionLabel').textContent = `${closest + 1} / ${children.length}`;
+}
+
+function renderDocs(){
+  const search = ($('docsSearch').value || '').trim().toLowerCase();
+  const root = $('docsContainer');
   root.innerHTML = '';
 
-  Object.entries(groups).forEach(([group, docs]) => {
-    const section = document.createElement('div');
-    section.className = 'doc-group';
+  DOC_SECTIONS.forEach(section => {
+    const payload = section.buildRows();
+    const textBlob = JSON.stringify(payload.rows);
+    if (search && !(`${section.title} ${section.note} ${textBlob}`.toLowerCase().includes(search))) return;
 
-    const title = document.createElement('div');
-    title.className = 'doc-group-title';
-    title.textContent = group;
-    section.appendChild(title);
+    const card = document.createElement('div');
+    card.className = 'doc-card';
+    card.innerHTML = `
+      <div class="panel-title">${section.title}</div>
+      <div class="field-hint">${section.note}</div>
+    `;
 
-    docs.forEach(doc => {
-      const card = document.createElement('button');
-      card.className = 'doc-card';
-      card.innerHTML = `
-        <div class="doc-meta">
-          <strong>${doc.title}</strong>
-          <span class="badge">資料</span>
-        </div>
-        <div class="doc-summary">${doc.summary}</div>
-      `;
-      card.addEventListener('click', () => openDocument(doc));
-      section.appendChild(card);
-    });
+    const wrap = document.createElement('div');
+    wrap.className = 'docs-table-wrap top-gap';
 
-    root.appendChild(section);
+    const table = document.createElement('table');
+    table.className = 'docs-table';
+
+    const headers = payload.headers.map(v => `<th>${v}</th>`).join('');
+    const bodyRows = payload.rows.map(row => {
+      const values = Object.values(row).map(v => `<td>${v}</td>`).join('');
+      return `<tr>${values}</tr>`;
+    }).join('');
+
+    table.innerHTML = `<thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody>`;
+    wrap.appendChild(table);
+    card.appendChild(wrap);
+    root.appendChild(card);
   });
 }
-function renderSaved() {
-  const historyRoot = els('historyList');
-  historyRoot.innerHTML = '';
 
-  if (!historyItems.length) {
-    historyRoot.innerHTML = '<div class="panel muted">履歴はまだありません。</div>';
-  } else {
-    historyItems.forEach(item => historyRoot.appendChild(buildSavedCard(item, true)));
-  }
-
-  const q = els('savedSearch').value.trim().toLowerCase();
-  const filtered = savedItems.filter(item =>
-    !q ||
-    item.title.toLowerCase().includes(q) ||
-    (item.memo || '').toLowerCase().includes(q)
-  );
-
-  const savedRoot = els('savedList');
-  savedRoot.innerHTML = '';
-
-  if (!filtered.length) {
-    savedRoot.innerHTML = '<div class="panel muted">保存済みデータはまだありません。</div>';
-  } else {
-    filtered.forEach(item => savedRoot.appendChild(buildSavedCard(item, false)));
-  }
-
-  renderCompare();
-}
-
-function buildSavedCard(item, isHistory) {
+function buildSaveCard(item, isHistory){
   const card = document.createElement('div');
   card.className = 'saved-card';
   const selected = compareIds.includes(item.id);
-  const result = item.result;
 
   card.innerHTML = `
     <div class="row">
-      <strong>${item.title}</strong>
+      <strong>${escapeHtml(item.title || '無題')}</strong>
       <span class="muted">${new Date(item.savedAt).toLocaleString('ja-JP')}</span>
     </div>
-    ${item.memo ? `<div class="muted" style="margin-top:6px;">${item.memo}</div>` : ''}
-    <div class="grid two" style="margin-top:10px;">
-      <div class="readonly-row"><span>電圧</span><strong>${item.input.voltage}</strong></div>
-      <div class="readonly-row"><span>主幹</span><strong>${item.input.breakerRating}A</strong></div>
-      <div class="readonly-row"><span>合計電流</span><strong>${formatNumber(result.totalCurrent, 2)}A</strong></div>
-      <div class="readonly-row"><span>電圧降下</span><strong>${formatNumber(result.dropPercent, 2)}%</strong></div>
+
+    ${item.memo ? `<div class="muted top-gap">${escapeHtml(item.memo)}</div>` : ''}
+
+    <div class="readonly-grid top-gap">
+      <div><span>計算方式</span><strong>${item.calculationMode === 'existing' ? '既設開閉器指定' : '自動選定'}</strong></div>
+      <div><span>採用ケーブル</span><strong>${item.result?.cableType || '-'} ${item.result?.cableSize ? `${item.result.cableSize}sq` : '-'}</strong></div>
+      <div><span>合計電流 [A]</span><strong>${formatNumber(item.result?.totalCurrent, 2)}</strong></div>
+      <div><span>電圧降下 [%]</span><strong>${formatNumber(item.result?.voltageDropPercent, 2)}</strong></div>
+      <div><span>判定</span><strong>${item.result?.judgement || '-'}</strong></div>
+      <div><span>データ版</span><strong>${item.versions?.ampacity || VERSIONS.ampacity}</strong></div>
     </div>
+
     <div class="inline-actions">
       <button class="ghost small js-open">この案を開く</button>
       ${!isHistory ? `<button class="ghost small js-compare">${selected ? '比較から外す' : '比較に追加'}</button>` : ''}
-      ${!isHistory ? '<button class="ghost small js-rename">名前を変更</button>' : ''}
+      ${!isHistory ? '<button class="ghost small js-rename">名前変更</button>' : ''}
       <button class="ghost small js-delete">削除</button>
     </div>
   `;
@@ -602,7 +836,7 @@ function buildSavedCard(item, isHistory) {
       savedItems = savedItems.filter(v => v.id !== item.id);
       compareIds = compareIds.filter(id => id !== item.id);
     }
-    persist();
+    persistState();
     renderSaved();
   };
 
@@ -613,16 +847,19 @@ function buildSavedCard(item, isHistory) {
       } else if (compareIds.length < 3) {
         compareIds.push(item.id);
       } else {
-        showToast('比較は最大3件です。');
+        return showToast('比較は最大3件です。');
       }
+
+      if (!state.compareBaseId && compareIds.length) state.compareBaseId = compareIds[0];
+      persistState();
       renderSaved();
     };
 
     card.querySelector('.js-rename').onclick = () => {
-      const next = prompt('保存名を入力してください。', item.title);
+      const next = prompt('保存名を入力してください。', item.title || '');
       if (next && next.trim()) {
         item.title = next.trim();
-        persist();
+        persistState();
         renderSaved();
       }
     };
@@ -630,542 +867,573 @@ function buildSavedCard(item, isHistory) {
 
   return card;
 }
-function openSavedItem(item) {
-  appState = structuredClone(item.input);
-  appState.lastResult = structuredClone(item.result);
-  persist();
-  syncFormFromState();
-  renderAutoValues();
-  renderResult();
-  switchScreen('calc');
-  showToast('計算画面へ読み込みました。');
+
+function renderSaved(){
+  const historyRoot = $('historyList');
+  historyRoot.innerHTML = '';
+
+  if (!historyItems.length) {
+    historyRoot.innerHTML = '<div class="panel muted">履歴はまだありません。</div>';
+  } else {
+    historyItems.forEach(item => historyRoot.appendChild(buildSaveCard(item, true)));
+  }
+
+  const query = ($('savedSearch').value || '').trim().toLowerCase();
+  const list = savedItems.filter(item => !query || `${item.title || ''} ${item.memo || ''}`.toLowerCase().includes(query));
+
+  const savedRoot = $('savedList');
+  savedRoot.innerHTML = '';
+
+  if (!list.length) {
+    savedRoot.innerHTML = '<div class="panel muted">保存済みデータはまだありません。</div>';
+  } else {
+    list.forEach(item => savedRoot.appendChild(buildSaveCard(item, false)));
+  }
+
+  renderCompare();
 }
 
-function renderCompare() {
-  const root = els('compareView');
+function renderCompare(){
+  const baseSelect = $('compareBaseSelect');
+  const compareItems = compareIds.map(id => savedItems.find(v => v.id === id)).filter(Boolean);
+
+  $('compareTargetCount').textContent = `${compareItems.length}件`;
+
+  setSelectOptions(
+    baseSelect,
+    compareItems.map(item => ({ value: item.id, label: item.title || '無題' })),
+    '選択してください',
+    state.compareBaseId || ''
+  );
+
+  baseSelect.onchange = () => {
+    state.compareBaseId = baseSelect.value;
+    persistState();
+    renderCompare();
+  };
+
+  const root = $('compareView');
   root.innerHTML = '';
 
-  const items = compareIds
-    .map(id => savedItems.find(v => v.id === id))
-    .filter(Boolean);
-
-  if (items.length < 2) {
+  if (compareItems.length < 2) {
     root.innerHTML = '<div class="panel muted">比較対象を2件以上選択してください。</div>';
     return;
   }
 
-  const sections = [
-    {
-      title: '基本条件',
-      rows: [
-        ['電源方式', items.map(v => v.input.powerSystem)],
-        ['電圧', items.map(v => v.input.voltage)],
-        ['主幹ブレーカー', items.map(v => `${v.input.breakerRating}A`)]
-      ]
-    },
-    {
-      title: 'ケーブル関係',
-      rows: [
-        ['ケーブル種類', items.map(v => v.input.cableType)],
-        ['ケーブルサイズ', items.map(v => `${v.input.cableSize}sq`)],
-        ['参考配管サイズ', items.map(v => v.result.conduit)]
-      ]
-    },
-    {
-      title: '判定結果',
-      rows: [
-        ['合計電流', items.map(v => `${formatNumber(v.result.totalCurrent, 2)}A`)],
-        ['電圧降下', items.map(v => `${formatNumber(v.result.dropPercent, 2)}%`)],
-        ['良否判定', items.map(v => v.result.judgement)]
-      ]
-    }
-  ];
+  const baseItem = compareItems.find(v => v.id === state.compareBaseId) || compareItems[0];
+  if (!state.compareBaseId) state.compareBaseId = baseItem.id;
 
-  sections.forEach(section => {
-    const panel = document.createElement('div');
-    panel.className = 'compare-card';
-    panel.innerHTML = `<div class="panel-title">${section.title}</div>`;
-
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'compare-table';
-
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    thead.innerHTML = `<tr><th>項目</th>${items.map(v => `<th>${v.title}</th>`).join('')}</tr>`;
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    section.rows.forEach(([title, values]) => {
-      const different = values.some(v => v !== values[0]);
-      const tr = document.createElement('tr');
-      if (different) tr.classList.add('diff');
-      tr.innerHTML = `<td>${title}</td>${values.map(v => `<td>${v}</td>`).join('')}`;
-      tbody.appendChild(tr);
-    });
-
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    panel.appendChild(tableWrap);
-    root.appendChild(panel);
-  });
-}
-
-function buildCSV() {
-  const r = appState.lastResult;
-  if (!r) return null;
-
-  const rows = [
-    ['項目', '値'],
-    ['計算種別', appState.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'],
-    ['電源方式', appState.powerSystem],
-    ['電圧', appState.voltage],
-    ['力率', appState.powerFactor],
-    ['効率', appState.efficiency],
-    ['配線長[m]', appState.wiringLength],
-    ['主幹ブレーカー[A]', appState.breakerRating],
-    ['ケーブル種類', appState.cableType],
-    ['ケーブルサイズ[sq]', appState.cableSize],
-    ['合計負荷件数', r.loadCount],
-    ['合計容量[kW]', r.totalKW],
-    ['合計容量[kVA]', r.totalKVA],
-    ['合計電流[A]', r.totalCurrent],
-    ['電圧降下[V]', r.dropV],
-    ['電圧降下[%]', r.dropPercent],
-    ['主幹裕度[%]', r.breakerMarginPercent],
-    ['容量裕度[kW]', r.capacityMarginKW],
-    ['推奨主幹ブレーカー', r.recommendedBreaker],
-    ['推奨ケーブルサイズ', r.recommendedCableSize],
-    ['参考配管サイズ', r.conduit],
-    ['参考ラック選定案', r.rack],
-    ['良否判定', r.judgement]
-  ];
-
-  return rows
-    .map(row => row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(','))
-    .join('\n');
-}
-
-function downloadCSV() {
-  const csv = buildCSV();
-
-  if (!csv) {
-    showToast('先に計算してください。');
-    return;
-  }
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const prefix = appState.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算';
-
-  a.href = url;
-  a.download = `${prefix}_${Date.now()}.csv`;
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-function printPDF() {
-  if (!appState.lastResult) {
-    showToast('先に計算してください。');
-    return;
-  }
-
-  if (!confirm('本帳票は参考資料です。最終判断は利用者責任で行ってください。続行しますか？')) {
-    return;
-  }
-
-  window.print();
-}
-
-function updateGroundWireResult() {
-  const type = els('groundType').value;
-  const wire = els('groundWireType').value;
-  const breaker = Number(appState.breakerRating);
-
-  const row =
-    MASTER.ground.find(v => v.groundType === type && v.wireType === wire && breaker <= v.maxBreaker) ||
-    MASTER.ground.find(v => v.groundType === type && v.wireType === wire);
-
-  els('groundResult').textContent = row
-    ? `主幹 ${breaker}A の参考接地線サイズ: ${row.size}`
-    : '条件に合う参考サイズがありません。';
-}
-
-function switchScreen(screen) {
-  Object.entries(screens).forEach(([key, el]) => {
-    el.classList.toggle('active', key === screen);
-  });
-
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.screen === screen);
-  });
-}
-
-function switchSavedTab(tab) {
-  document.querySelectorAll('.saved-seg').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.savedTab === tab);
-  });
-
-  document.querySelectorAll('.saved-subview').forEach(el => {
-    el.classList.remove('active');
-  });
-
-  els(`saved-subview-${tab}`).classList.add('active');
-}
-
-function syncFormFromState() {
-  document.querySelectorAll('.seg').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.calcType === appState.calculationType);
-  });
-
-  populatePowerSystemOptions();
-  populateVoltageOptions();
-
-  els('powerFactor').value = appState.powerFactor;
-  els('efficiency').value = appState.efficiency;
-  els('wiringLength').value = appState.wiringLength;
-  els('breakerRating').value = appState.breakerRating;
-  els('projectName').value = appState.projectName || '';
-  els('projectRemarks').value = appState.projectRemarks || '';
-
-  populateCableOptions();
-
-  els('installationMethod').value = appState.installationMethod;
-  els('sunlightCondition').value = appState.sunlightCondition;
-  els('ambientTemperature').value = String(appState.ambientTemperature);
-  els('multiCircuit').value = appState.multiCircuit ? 'true' : 'false';
-  els('circuitCount').value = String(appState.circuitCount);
-  els('arrangementSpacing').value = appState.arrangementSpacing;
-
-  renderLoadList();
-}
-
-function captureFormToState() {
-  appState.powerFactor = Number(els('powerFactor').value || 0);
-  appState.efficiency = Number(els('efficiency').value || 0);
-  appState.wiringLength = Number(els('wiringLength').value || 0);
-  appState.breakerRating = Number(els('breakerRating').value || 0);
-  appState.projectName = els('projectName').value || '';
-  appState.projectRemarks = els('projectRemarks').value || '';
-  appState.installationMethod = els('installationMethod').value;
-  appState.sunlightCondition = els('sunlightCondition').value;
-  appState.ambientTemperature = Number(els('ambientTemperature').value);
-  appState.multiCircuit = els('multiCircuit').value === 'true';
-  appState.circuitCount = Number(els('circuitCount').value);
-  appState.arrangementSpacing = els('arrangementSpacing').value;
-
-  persist();
-}
-
-function populatePowerSystemOptions() {
-  const options = appState.calculationType === 'power'
-    ? ['3φ3W', '3φ4W']
-    : ['1φ2W', '1φ3W'];
-
-  const select = els('powerSystem');
-  select.innerHTML = options.map(v => `<option value="${v}">${v}</option>`).join('');
-
-  if (!options.includes(appState.powerSystem)) appState.powerSystem = options[0];
-
-  select.value = appState.powerSystem;
-  select.onchange = () => {
-    appState.powerSystem = select.value;
-    persist();
-  };
-}
-
-function populateVoltageOptions() {
-  const options = appState.calculationType === 'power'
-    ? ['200V', '400V']
-    : ['100V', '200V'];
-
-  const select = els('voltage');
-  select.innerHTML = options.map(v => `<option value="${v}">${v}</option>`).join('');
-
-  if (!options.includes(appState.voltage)) appState.voltage = options[0];
-
-  select.value = appState.voltage;
-  select.onchange = () => {
-    appState.voltage = select.value;
-    persist();
-  };
-}
-
-function populateCableOptions() {
-  const selectType = els('cableType');
-  const types = appState.calculationType === 'power'
-    ? ['CVT', 'CV', 'CVD']
-    : ['CV', 'CVD', 'CVT'];
-
-  selectType.innerHTML = types.map(v => `<option value="${v}">${v}</option>`).join('');
-
-  if (!types.includes(appState.cableType)) appState.cableType = types[0];
-
-  selectType.value = appState.cableType;
-  selectType.onchange = () => {
-    appState.cableType = selectType.value;
-    populateCableSizeOptions();
-    persist();
-  };
-
-  populateCableSizeOptions();
-}
-
-function populateCableSizeOptions() {
-  const selectSize = els('cableSize');
-  const coreType = appState.calculationType === 'power' ? '3C' : '2C';
-
-  const available = MASTER.cableAmpacity
-    .filter(v => v.cableType === appState.cableType && v.coreType === coreType)
-    .map(v => Number(v.sizeSq));
-
-  const sizes = available.length ? available : MASTER.cableSizes;
-  selectSize.innerHTML = sizes.map(v => `<option value="${v}">${v}sq</option>`).join('');
-
-  if (!sizes.includes(Number(appState.cableSize))) appState.cableSize = sizes[0];
-
-  selectSize.value = String(appState.cableSize);
-  selectSize.onchange = () => {
-    appState.cableSize = Number(selectSize.value);
-    persist();
-  };
-}
-
-function renderLoadList() {
-  const root = els('loadList');
-  root.innerHTML = '';
-
-  appState.loads.forEach((load, idx) => {
+  compareItems.filter(item => item.id !== baseItem.id).forEach(item => {
     const card = document.createElement('div');
-    card.className = 'load-card';
+    card.className = 'compare-card';
+
+    const rows = [
+      ['合計電流 [A]', baseItem.result.totalCurrent, item.result.totalCurrent, item.result.totalCurrent - baseItem.result.totalCurrent],
+      ['電圧降下 [%]', baseItem.result.voltageDropPercent, item.result.voltageDropPercent, item.result.voltageDropPercent - baseItem.result.voltageDropPercent],
+      ['開閉器裕度 [%]', baseItem.result.breakerMarginPercent, item.result.breakerMarginPercent, item.result.breakerMarginPercent - baseItem.result.breakerMarginPercent],
+      ['容量裕度 [kW]', baseItem.result.capacityMarginKW, item.result.capacityMarginKW, item.result.capacityMarginKW - baseItem.result.capacityMarginKW]
+    ];
+
+    const bodyRows = rows.map(([label, base, target, diff]) => {
+      const trend = diff > 0 ? '大きい' : diff < 0 ? '小さい' : '同じ';
+      return `
+        <tr class="${diff !== 0 ? 'diff' : ''}">
+          <td>${label}</td>
+          <td>${formatNumber(base, 2)}</td>
+          <td>${formatNumber(target, 2)}</td>
+          <td>${diff > 0 ? '+' : ''}${formatNumber(diff, 2)}</td>
+          <td>${trend}</td>
+        </tr>
+      `;
+    }).join('');
 
     card.innerHTML = `
-      <div class="grid two">
-        <label><span>負荷名称</span><input type="text" data-key="name" value="${load.name || ''}" /></label>
-        <label><span>入力方式</span>
-          <select data-key="inputType">
-            <option ${load.inputType === 'kW' ? 'selected' : ''}>kW</option>
-            <option ${load.inputType === 'A' ? 'selected' : ''}>A</option>
-            <option ${load.inputType === 'kVA' ? 'selected' : ''}>kVA</option>
-          </select>
-        </label>
-        <label><span>負荷値</span><input type="number" step="0.01" data-key="value" value="${load.value}" /></label>
-        <div class="row" style="align-self:end;">
-          <span class="muted">No.${idx + 1}</span>
-          <button class="ghost small js-remove">削除</button>
-        </div>
+      <div class="panel-title">基準案：${escapeHtml(baseItem.title || '無題')} ／ 比較案：${escapeHtml(item.title || '無題')}</div>
+      <div class="compare-table">
+        <table>
+          <thead>
+            <tr><th>項目</th><th>基準案</th><th>比較案</th><th>差分</th><th>大小</th></tr>
+          </thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
       </div>
     `;
-
-    card.querySelectorAll('input,select').forEach(input => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.key;
-        if (key === 'value') {
-          load[key] = Number(input.value);
-        } else {
-          load[key] = input.value;
-        }
-        persist();
-      });
-    });
-
-    card.querySelector('.js-remove').onclick = () => {
-      if (appState.loads.length === 1) {
-        showToast('負荷は1件以上必要です。');
-        return;
-      }
-      appState.loads = appState.loads.filter(v => v.id !== load.id);
-      persist();
-      renderLoadList();
-    };
 
     root.appendChild(card);
   });
 }
 
-function initStaticOptions() {
-  els('installationMethod').innerHTML = ['気中敷設', '埋設', '管路'].map(v => `<option>${v}</option>`).join('');
-  els('sunlightCondition').innerHTML = ['日射なし', '直射日光あり'].map(v => `<option>${v}</option>`).join('');
-  els('ambientTemperature').innerHTML = [30, 40, 45].map(v => `<option value="${v}">${v}</option>`).join('');
-  els('multiCircuit').innerHTML = `<option value="false">なし</option><option value="true">あり</option>`;
-  els('circuitCount').innerHTML = [1, 2, 3, 4, 5, 6].map(v => `<option value="${v}">${v}</option>`).join('');
-  els('arrangementSpacing').innerHTML = ['密着', '離隔あり'].map(v => `<option>${v}</option>`).join('');
-
-  [
-    'powerFactor',
-    'efficiency',
-    'wiringLength',
-    'breakerRating',
-    'projectName',
-    'projectRemarks',
-    'installationMethod',
-    'sunlightCondition',
-    'ambientTemperature',
-    'multiCircuit',
-    'circuitCount',
-    'arrangementSpacing'
-  ].forEach(id => {
-    els(id).addEventListener('change', captureFormToState);
-    els(id).addEventListener('input', captureFormToState);
-  });
+function openSavedItem(item){
+  state = structuredClone(item.input);
+  state.lastResult = structuredClone(item.result);
+  persistState();
+  renderAll();
+  switchScreen('calc');
+  $('resultPanel').classList.remove('hidden');
+  $('resultBody').classList.remove('hidden');
+  updateResultError('');
+  renderResult();
+  showToast('計算画面へ読み込みました。');
 }
 
-function runDisclaimerFlow() {
-  if (localStorage.getItem(STORAGE.disclaimer) === 'accepted') return;
-
-  disclaimerStep = 1;
-  els('disclaimerTitle').textContent = '免責事項';
-  els('disclaimerBody').textContent = '本Webアプリおよび帳票出力内容は参考資料です。';
-  els('disclaimerDialog').showModal();
+function switchSavedTab(tab){
+  document.querySelectorAll('.saved-seg').forEach(btn => btn.classList.toggle('active', btn.dataset.savedTab === tab));
+  document.querySelectorAll('.saved-subview').forEach(el => el.classList.remove('active'));
+  $(`saved-subview-${tab}`).classList.add('active');
 }
 
-function nextDisclaimer() {
-  if (disclaimerStep === 1) {
-    disclaimerStep = 2;
-    els('disclaimerTitle').textContent = '重要な確認';
-    els('disclaimerBody').textContent = '最終判断は利用者責任で行ってください。内線規定、関係法令、現場条件、機器仕様等を確認してください。';
+function switchScreen(screen){
+  Object.entries(screens).forEach(([key, el]) => el.classList.toggle('active', key === screen));
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screen));
+}
+
+function renderAmpacitySection(){
+  const corrected = correctedAmpacity();
+  const breakdown = getCorrectionBreakdown();
+
+  $('correctedAmpacityValue').textContent = corrected ? formatNumber(corrected, 2) : '-';
+  $('coefTemperature').textContent = breakdown.temperature ? formatNumber(breakdown.temperature, 3) : '-';
+  $('coefParallel').textContent = breakdown.parallel ? formatNumber(breakdown.parallel, 3) : '-';
+  $('coefMethod').textContent = breakdown.method ? formatNumber(breakdown.method, 3) : '-';
+  $('coefCondition').textContent = breakdown.condition ? formatNumber(breakdown.condition, 3) : '-';
+  $('coefFinal').textContent = breakdown.final ? formatNumber(breakdown.final, 3) : '-';
+
+  const info = getCableInfo(state.cableType, Number(state.cableSize));
+  const massPerM = info?.massKgKm ? Number(info.massKgKm) / 1000 : 0;
+  $('massPerMeter').textContent = massPerM ? formatNumber(massPerM, 3) : '-';
+
+  const totalMass = massPerM && state.wiringLength
+    ? massPerM * Number(state.wiringLength) * Number(state.parallelCount || 1)
+    : 0;
+  $('massTotal').textContent = totalMass ? formatNumber(totalMass, 2) : '-';
+
+  $('rackWidthValue').textContent = info?.outerDiameter
+    ? rackWidthFor(Number(info.outerDiameter), Number(state.parallelCount || 1))
+    : '-';
+
+  const badge = $('ampacityModeBadge');
+  badge.className = 'mode-badge';
+
+  if (state.ampacityMode === 'auto') {
+    badge.textContent = '自動';
+  } else if (state.ampacityMode === 'manual') {
+    badge.textContent = '手動';
+    badge.classList.add('manual');
   } else {
-    localStorage.setItem(STORAGE.disclaimer, 'accepted');
-    els('disclaimerDialog').close();
+    badge.textContent = '未設定';
+    badge.classList.add('none');
   }
 }
 
-function setupInstallPrompt() {
+function applySettingsValues(){
+  $('verAmpacity').textContent = VERSIONS.ampacity;
+  $('verPhysical').textContent = VERSIONS.physical;
+  $('verForm').textContent = VERSIONS.form;
+}
+
+function renderAll(){
+  setSelectOptions($('calcMode'), [{value:'auto',label:'自動選定'},{value:'existing',label:'既設開閉器指定'}], '選択してください', state.calcMode);
+  setSelectOptions($('powerSystem'), ['1φ2W','1φ3W','3φ3W','3φ4W'], '選択してください', state.powerSystem);
+  setSelectOptions($('voltage'), ['100','200','400'], '選択してください', state.voltage);
+  setSelectOptions($('powerFactor'), POWER_FACTOR_OPTIONS, '選択してください', state.powerFactor);
+  setSelectOptions($('efficiency'), EFFICIENCY_OPTIONS, '選択してください', state.efficiency);
+  setSelectOptions($('existingBreaker'), BREAKER_SIZES.map(v => ({value:String(v), label:`${v}A`})), '選択してください', state.existingBreaker);
+  setSelectOptions($('loadCount'), [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(v => ({value:String(v), label:`${v}`})), '選択してください', state.loadCount);
+  setSelectOptions($('cableType'), ['CV-1C','CV-2C','CV-3C','CV-4C'], '選択してください', state.cableType);
+  setSelectOptions($('cableSize'), getCableSizes(state.cableType).map(v => ({value:String(v), label:`${v}sq`})), '選択してください', state.cableSize);
+  setSelectOptions($('installationMethod'), ['気中','管路','埋設'], '選択してください', state.installationMethod);
+  setSelectOptions($('layingCondition'), ['日射なし','直射日光あり'], '選択してください', state.layingCondition);
+  setSelectOptions($('ambientTemperature'), [20,25,30,35,40,45,50].map(v => ({value:String(v), label:`${v}℃`})), '選択してください', state.ambientTemperature);
+  setSelectOptions($('parallelCount'), [1,2,3,4,5,6].map(v => ({value:String(v), label:`${v}`})), '選択してください', state.parallelCount);
+
+  $('wiringLength').value = state.wiringLength || '';
+  $('projectName').value = state.projectName || '';
+  $('projectRemarks').value = state.projectRemarks || '';
+  $('baseAmpacity').value = state.baseAmpacity || '';
+
+  $('calcModeHint').textContent = state.calcMode === 'existing'
+    ? '既設開閉器サイズを基準に幹線サイズを選定します。'
+    : '合計負荷容量から必要最小開閉器を算出し、幹線サイズを選定します。';
+
+  renderLoadCards();
+  renderAmpacitySection();
+  renderDocs();
+  renderSaved();
+
+  if (state.lastResult) {
+    $('resultPanel').classList.remove('hidden');
+    $('resultBody').classList.remove('hidden');
+    updateResultError('');
+    renderResult();
+  }
+}
+
+function wireNumericInput(input, onChange){
+  input.addEventListener('focus', () => {
+    if (input.value !== '') {
+      input.value = '';
+      onChange();
+    }
+  });
+  input.addEventListener('input', onChange);
+}
+
+function bindEvents(){
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => switchScreen(btn.dataset.screen)));
+
+  document.querySelectorAll('.seg').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.seg').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    state.calculationType = btn.dataset.calcType;
+    persistState();
+  }));
+
+  $('calcMode').addEventListener('change', () => {
+    state.calcMode = $('calcMode').value;
+    persistState();
+    renderAll();
+  });
+
+  $('powerSystem').addEventListener('change', () => {
+    state.powerSystem = $('powerSystem').value;
+    persistState();
+    validateRealtime();
+  });
+
+  $('voltage').addEventListener('change', () => {
+    state.voltage = $('voltage').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('powerFactor').addEventListener('change', () => {
+    state.powerFactor = $('powerFactor').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('efficiency').addEventListener('change', () => {
+    state.efficiency = $('efficiency').value;
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('existingBreaker').addEventListener('change', () => {
+    state.existingBreaker = $('existingBreaker').value;
+    persistState();
+    validateRealtime();
+  });
+
+  $('loadCount').addEventListener('change', () => {
+    state.loadCount = $('loadCount').value;
+    normalizeLoads();
+    persistState();
+    renderLoadCards();
+    validateRealtime();
+  });
+
+  $('cableType').addEventListener('change', () => {
+    const prevSize = state.cableSize;
+    state.cableType = $('cableType').value;
+    const sizes = getCableSizes(state.cableType).map(String);
+
+    if (!sizes.includes(String(prevSize))) {
+      state.cableSize = '';
+      state.baseAmpacity = '';
+      state.ampacityMode = 'none';
+      showToast('選択可能なケーブルサイズが変わりました。');
+    }
+
+    persistState();
+    renderAll();
+  });
+
+  $('cableSize').addEventListener('change', () => {
+    state.cableSize = $('cableSize').value;
+    const info = getCableInfo(state.cableType, Number(state.cableSize));
+    state.baseAmpacity = info?.ampacity ? String(info.ampacity) : '';
+    state.ampacityMode = info?.ampacity ? 'auto' : 'none';
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  wireNumericInput($('baseAmpacity'), () => {
+    state.baseAmpacity = $('baseAmpacity').value;
+    state.ampacityMode = $('baseAmpacity').value ? 'manual' : 'none';
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('installationMethod').addEventListener('change', () => {
+    state.installationMethod = $('installationMethod').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('layingCondition').addEventListener('change', () => {
+    state.layingCondition = $('layingCondition').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('ambientTemperature').addEventListener('change', () => {
+    state.ambientTemperature = $('ambientTemperature').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('parallelCount').addEventListener('change', () => {
+    state.parallelCount = $('parallelCount').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('projectName').addEventListener('input', () => {
+    state.projectName = $('projectName').value;
+    persistState();
+  });
+
+  $('projectRemarks').addEventListener('input', () => {
+    state.projectRemarks = $('projectRemarks').value;
+    persistState();
+  });
+
+  wireNumericInput($('wiringLength'), () => {
+    state.wiringLength = $('wiringLength').value;
+    persistState();
+    renderAmpacitySection();
+    validateRealtime();
+  });
+
+  $('calculateBtn').addEventListener('click', calculate);
+
+  $('toggleResultBtn').addEventListener('click', () => {
+    const body = $('resultBody');
+    body.classList.toggle('hidden');
+    $('toggleResultBtn').textContent = body.classList.contains('hidden') ? '展開する' : '折りたたむ';
+  });
+
+  $('saveResultTopBtn').addEventListener('click', openSaveDialog);
+  $('saveResultBottomBtn').addEventListener('click', openSaveDialog);
+
+  $('confirmSaveBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    confirmSave();
+  });
+
+  $('csvBtn').addEventListener('click', downloadCsv);
+  $('pdfBtn').addEventListener('click', printPdf);
+
+  $('groundWireBtn').addEventListener('click', () => $('groundDialog').showModal());
+  $('closeGroundDialog').addEventListener('click', () => $('groundDialog').close());
+  $('groundType').addEventListener('change', updateGroundResult);
+  $('groundWireType').addEventListener('change', updateGroundResult);
+
+  $('docsSearch').addEventListener('input', renderDocs);
+  $('openDocsFromCalc').addEventListener('click', () => switchScreen('docs'));
+  $('returnCalcFromDocs').addEventListener('click', () => switchScreen('calc'));
+
+  $('savedSearch').addEventListener('input', renderSaved);
+
+  $('clearHistoryBtn').addEventListener('click', () => {
+    if (!confirm('履歴をすべて削除しますか？')) return;
+    historyItems = [];
+    persistState();
+    renderSaved();
+  });
+
+  $('resetDisclaimerBtn').addEventListener('click', () => {
+    localStorage.removeItem(STORAGE.disclaimer);
+    showToast('次回起動時に免責を再表示します。');
+  });
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    els('installBtn').hidden = false;
+    $('installBtn').hidden = false;
   });
 
-  els('installBtn').addEventListener('click', async () => {
+  $('installBtn').addEventListener('click', async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     deferredPrompt = null;
-    els('installBtn').hidden = true;
+    $('installBtn').hidden = true;
   });
 }
 
-function setupEvents() {
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.onclick = () => switchScreen(btn.dataset.screen);
+function validateRealtime(){
+  const missing = missingFields();
+  markMissingFields(missing);
+}
+
+function openSaveDialog(){
+  if (!state.lastResult) return showToast('先に計算してください。');
+
+  $('saveTitleInput').value =
+    state.projectName ||
+    `${state.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'}_${new Date().toLocaleString('sv-SE').replace(/[: ]/g,'_')}`;
+
+  $('saveMemoInput').value = state.projectRemarks || '';
+  $('saveDialog').showModal();
+}
+
+function confirmSave(){
+  const title = $('saveTitleInput').value.trim();
+  if (!title) return showToast('保存名を入力してください。');
+
+  const item = {
+    id: crypto.randomUUID(),
+    title,
+    memo: $('saveMemoInput').value.trim(),
+    savedAt: new Date().toISOString(),
+    input: structuredClone(state),
+    result: structuredClone(state.lastResult),
+    calculationMode: state.calcMode,
+    versions: structuredClone(VERSIONS)
+  };
+
+  savedItems.unshift(item);
+  persistState();
+  renderSaved();
+  $('saveDialog').close();
+  showToast('保存しました。');
+}
+
+function downloadCsv(){
+  if (!state.lastResult) return showToast('先に計算してください。');
+
+  const r = state.lastResult;
+  const rows = [
+    ['項目','値'],
+    ['工事件名', state.projectName || ''],
+    ['備考', state.projectRemarks || ''],
+    ['計算種別', state.calculationType === 'power' ? '低圧動力幹線計算' : '低圧電灯幹線計算'],
+    ['計算方式', state.calcMode === 'existing' ? '既設開閉器指定' : '自動選定'],
+    ['電源方式', state.powerSystem],
+    ['電圧[V]', state.voltage],
+    ['力率', state.powerFactor],
+    ['効率', state.efficiency],
+    ['配線長[m]', state.wiringLength],
+    ['既設開閉器[A]', state.existingBreaker || ''],
+    ['ケーブル種類', state.cableType],
+    ['ケーブルサイズ[sq]', state.cableSize],
+    ['基準許容電流[A]', state.baseAmpacity],
+    ['条件反映後許容電流[A]', r.correctedAmpacity],
+    ['温度補正係数', r.correctionBreakdown.temperature],
+    ['条数補正係数', r.correctionBreakdown.parallel],
+    ['敷設方法補正係数', r.correctionBreakdown.method],
+    ['敷設条件補正係数', r.correctionBreakdown.condition],
+    ['最終補正係数', r.correctionBreakdown.final],
+    ['必要最小開閉器[A]', r.requiredBreaker],
+    ['採用開閉器[A]', r.adoptedBreaker],
+    ['採用ケーブルサイズ', `${r.cableType} ${r.cableSize}sq`],
+    ['合計容量[kW]', r.totalKW],
+    ['合計容量[kVA]', r.totalKVA],
+    ['合計電流[A]', r.totalCurrent],
+    ['電圧降下[V]', r.voltageDropV],
+    ['電圧降下[%]', r.voltageDropPercent],
+    ['開閉器裕度[%]', r.breakerMarginPercent],
+    ['容量裕度[kW]', r.capacityMarginKW],
+    ['概算質量[kg/m]', r.massKgM],
+    ['概算総質量[kg]', r.massTotalKg],
+    ['参考ラック幅', r.rackWidth],
+    ['良否判定', r.judgement],
+    ['選定主因', r.mainFactor],
+    ['選定根拠', r.reasons.join('、')],
+    ['許容電流データ版', VERSIONS.ampacity],
+    ['外径・質量データ版', VERSIONS.physical],
+    ['帳票様式版', VERSIONS.form],
+    [],
+    ['負荷No','負荷名称','入力方式','負荷値','換算電流[A]','換算容量[kW]','換算容量[kVA]']
+  ];
+
+  r.loadDetails.forEach((load, index) => {
+    rows.push([index + 1, load.name, load.inputType, load.value, load.current, load.kw, load.kva]);
   });
 
-  document.querySelectorAll('.seg').forEach(btn => {
-    btn.onclick = () => {
-      appState.calculationType = btn.dataset.calcType;
-      appState.lastResult = null;
+  const csv = rows
+    .map(row => row.map(v => `"${String(v ?? '').replaceAll('"','""')}"`).join(','))
+    .join('\n');
 
-      if (appState.calculationType === 'power') {
-        appState.powerSystem = '3φ3W';
-        appState.voltage = '200V';
-        appState.powerFactor = 0.8;
-        appState.efficiency = 0.9;
-        appState.cableType = 'CVT';
-        appState.cableSize = 14;
-        appState.loads = [{ id: crypto.randomUUID(), name: '負荷1', inputType: 'kW', value: 3.91 }];
-      } else {
-        appState.powerSystem = '1φ2W';
-        appState.voltage = '100V';
-        appState.powerFactor = 1;
-        appState.efficiency = 1;
-        appState.cableType = 'CV';
-        appState.cableSize = 5.5;
-        appState.loads = [{ id: crypto.randomUUID(), name: '照明', inputType: 'kW', value: 1.2 }];
-      }
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${state.projectName || 'feeder_calc'}_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-      persist();
-      syncFormFromState();
-      renderAutoValues();
-      renderResult();
-    };
-  });
+function printPdf(){
+  if (!state.lastResult) return showToast('先に計算してください。');
+  if (!confirm('本帳票は参考資料です。最終判断は利用者責任で行ってください。続行しますか？')) return;
+  window.print();
+}
 
-  document.querySelectorAll('.saved-seg').forEach(btn => {
-    btn.onclick = () => switchSavedTab(btn.dataset.savedTab);
-  });
+function updateGroundResult(){
+  const groundType = $('groundType').value;
+  const wireType = $('groundWireType').value;
+  const breaker = Number(state.lastResult?.adoptedBreaker || state.existingBreaker || 0);
 
-  els('addLoadBtn').onclick = () => {
-    if (appState.loads.length >= 20) {
-      showToast('負荷は最大20件です。');
-      return;
+  const rule =
+    GROUND_RULES.find(v => v.groundType === groundType && v.wireType === wireType && breaker <= v.maxBreaker) ||
+    GROUND_RULES.find(v => v.groundType === groundType && v.wireType === wireType);
+
+  $('groundResult').textContent = rule
+    ? `採用開閉器 ${breaker}A の参考接地線サイズ：${rule.size}`
+    : '条件に合う参考サイズがありません。';
+}
+
+function runDisclaimer(){
+  if (localStorage.getItem(STORAGE.disclaimer) === 'accepted') return;
+
+  disclaimerStep = 1;
+  $('disclaimerTitle').textContent = '免責事項';
+  $('disclaimerBody').textContent = '本Webアプリおよび帳票出力内容は参考資料です。';
+  $('disclaimerDialog').showModal();
+
+  $('disclaimerNextBtn').onclick = () => {
+    if (disclaimerStep === 1) {
+      disclaimerStep = 2;
+      $('disclaimerTitle').textContent = '重要な確認';
+      $('disclaimerBody').textContent = '最終判断は利用者責任で行ってください。法令、現場条件、機器仕様等を確認してください。';
+    } else {
+      localStorage.setItem(STORAGE.disclaimer, 'accepted');
+      $('disclaimerDialog').close();
     }
-
-    appState.loads.push({
-      id: crypto.randomUUID(),
-      name: `負荷${appState.loads.length + 1}`,
-      inputType: 'kW',
-      value: 0
-    });
-
-    persist();
-    renderLoadList();
   };
-
-  els('calculateBtn').onclick = calculate;
-  els('saveResultTopBtn').onclick = openSaveDialog;
-  els('saveResultBottomBtn').onclick = openSaveDialog;
-
-  els('confirmSaveBtn').onclick = (e) => {
-    e.preventDefault();
-    confirmSave();
-  };
-
-  els('closeDocsDialog').onclick = () => els('docsDialog').close();
-  els('docsSearch').addEventListener('input', renderDocs);
-  els('openDocsFromCalc').onclick = () => switchScreen('docs');
-
-  els('clearHistoryBtn').onclick = () => {
-    if (!confirm('履歴をすべて削除しますか？')) return;
-    historyItems = [];
-    persist();
-    renderSaved();
-  };
-
-  els('savedSearch').addEventListener('input', renderSaved);
-
-  els('csvBtn').onclick = downloadCSV;
-  els('pdfBtn').onclick = printPDF;
-
-  els('groundWireBtn').onclick = () => {
-    updateGroundWireResult();
-    els('groundDialog').showModal();
-  };
-
-  els('closeGroundDialog').onclick = () => els('groundDialog').close();
-  els('groundType').onchange = updateGroundWireResult;
-  els('groundWireType').onchange = updateGroundWireResult;
-
-  els('resetDisclaimerBtn').onclick = () => {
-    localStorage.removeItem(STORAGE.disclaimer);
-    showToast('次回起動時に免責を再表示します。');
-  };
-
-  els('disclaimerNextBtn').onclick = nextDisclaimer;
 }
 
-function registerSW() {
+function registerSW(){
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 }
 
-function init() {
-  initStaticOptions();
-  setupInstallPrompt();
-  setupEvents();
-  syncFormFromState();
-  renderAutoValues();
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;');
+}
 
-  if (appState.lastResult) {
-    renderResult();
-  }
-
-  renderDocs();
-  renderSaved();
+function init(){
+  bindEvents();
+  applySettingsValues();
+  renderAll();
   switchScreen('calc');
   switchSavedTab('history');
-  runDisclaimerFlow();
+  runDisclaimer();
   registerSW();
 }
 
