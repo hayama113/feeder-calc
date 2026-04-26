@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="低圧幹線計算アプリアイコン">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient></defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bg)"/>
+  <rect x="94" y="104" width="324" height="304" rx="36" fill="#eff6ff"/>
+  <path d="M130 166h252M130 224h252M130 282h130" stroke="#1d4ed8" stroke-width="24" stroke-linecap="round"/>
+  <path d="M300 260l-42 76h44l-20 76 78-106h-45l24-46z" fill="#facc15" stroke="#92400e" stroke-width="8" stroke-linejoin="round"/>
+</svg>
