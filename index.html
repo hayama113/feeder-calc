@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>低圧幹線計算</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">PWA / GitHub Pages Ready</p>
+      <h1>低圧幹線計算</h1>
+      <p class="lead">低圧動力・低圧電灯の幹線、主幹開閉器、ケーブル、配管、ラック幅の概略選定。</p>
+    </div>
+    <div class="status-card">
+      <span id="versionLabel">v3.1.1-final</span>
+      <small id="saveState">未保存</small>
+    </div>
+  </header>
+
+  <nav class="top-tabs" aria-label="メインメニュー">
+    <button class="tab-button active" data-view="calcView">低圧幹線計算</button>
+    <button class="tab-button" data-view="freeCalcView">任意計算</button>
+    <button class="tab-button" data-view="docsView">技術資料</button>
+  </nav>
+
+  <main>
+    <section id="calcView" class="view active">
+      <section class="panel">
+        <div class="panel-title">
+          <h2>案件情報</h2>
+          <span>PDF・Excel出力用</span>
+        </div>
+        <div class="grid cols-3">
+          <label>工事件名<input id="projectName" placeholder="例：〇〇棟 動力幹線更新" /></label>
+          <label>作成者<input id="author" placeholder="例：施工管理者" /></label>
+          <label>提出先<input id="client" placeholder="例：〇〇株式会社" /></label>
+          <label>図番<input id="drawingNo" placeholder="例：E-001" /></label>
+          <label>工事種別<input id="workType" placeholder="例：幹線更新工事" /></label>
+          <label>作成日時<input id="createdAt" type="datetime-local" /></label>
+        </div>
+        <label>備考<textarea id="remarks" rows="3" placeholder="確認事項、既設条件、施工上の注意など"></textarea></label>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <h2>計算条件</h2>
+          <span>入力箇所を集約</span>
+        </div>
+        <div class="grid cols-4">
+          <label>計算種別
+            <select id="calcType">
+              <option value="power">低圧動力幹線計算</option>
+              <option value="lighting">低圧電灯幹線計算</option>
+            </select>
+          </label>
+          <label>電源方式
+            <select id="phaseType">
+              <option value="3p3w">3φ3W</option>
+              <option value="3p4w">3φ4W</option>
+              <option value="1p3w">1φ3W</option>
+              <option value="1p2w">1φ2W</option>
+            </select>
+          </label>
+          <label>線間電圧 V<input id="voltage" type="number" inputmode="decimal" value="200" min="1" /></label>
+          <label>相電圧・対地電圧 V<input id="phaseVoltage" type="number" inputmode="decimal" value="100" min="1" /></label>
+          <label>力率<input id="powerFactor" type="number" inputmode="decimal" value="0.85" step="0.01" min="0.1" max="1" /></label>
+          <label>効率<input id="efficiency" type="number" inputmode="decimal" value="0.90" step="0.01" min="0.1" max="1" /></label>
+          <label>需要率 %<input id="demandFactor" type="number" inputmode="decimal" value="100" step="1" min="1" /></label>
+          <label>余裕率 %<input id="marginFactor" type="number" inputmode="decimal" value="125" step="1" min="100" /></label>
+          <label>配線長 m<input id="lengthM" type="number" inputmode="decimal" value="30" step="1" min="0" /></label>
+          <label>電圧降下基準 %<input id="vdLimit" type="number" inputmode="decimal" value="5" step="0.1" min="0.1" /></label>
+          <label>周囲温度 ℃<input id="ambientTemp" type="number" inputmode="decimal" value="40" step="1" /></label>
+          <label>敷設方法
+            <select id="installMethod">
+              <option value="air">気中・ラック</option>
+              <option value="conduit">管路</option>
+              <option value="buried">埋設</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <h2>負荷一覧</h2>
+          <span>換算電流・換算容量を自動集計</span>
+        </div>
+        <div class="table-wrap">
+          <table id="loadTable">
+            <thead>
+              <tr>
+                <th>負荷名称</th>
+                <th>容量</th>
+                <th>単位</th>
+                <th>台数</th>
+                <th>需要率%</th>
+                <th>備考</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="loadBody"></tbody>
+          </table>
+        </div>
+        <div class="button-row">
+          <button id="addLoadBtn" type="button">負荷を追加</button>
+          <button id="sampleLoadBtn" type="button" class="secondary">サンプル投入</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <h2>既設・手動指定</h2>
+          <span>既設検討が不要な場合は空欄で可</span>
+        </div>
+        <div class="grid cols-4">
+          <label>既設主幹 AT
+            <select id="existingBreaker"><option value="">未指定</option></select>
+          </label>
+          <label>既設ケーブル種別
+            <select id="existingCableType"></select>
+          </label>
+          <label>既設ケーブルサイズ sq
+            <select id="existingCableSize"><option value="">未指定</option></select>
+          </label>
+          <label>単心並列本数/相<input id="parallelRuns" type="number" inputmode="numeric" value="1" min="1" step="1" /></label>
+        </div>
+      </section>
+
+      <section class="action-bar">
+        <button id="calcBtn" type="button" class="primary">計算する</button>
+        <button id="saveBtn" type="button">保存</button>
+        <button id="loadSavedBtn" type="button">保存一覧</button>
+        <button id="csvBtn" type="button">CSV出力</button>
+        <button id="excelBtn" type="button">Excel出力</button>
+        <button id="pdfBtn" type="button">PDF出力</button>
+        <button id="clearBtn" type="button" class="danger">クリア</button>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="panel-title">
+          <h2>計算結果</h2>
+          <span>既設 → 推奨 → 最小</span>
+        </div>
+        <div id="summaryCards" class="cards"></div>
+        <div class="result-tabs" id="resultTabs"></div>
+        <div id="resultPages"></div>
+      </section>
+    </section>
+
+    <section id="freeCalcView" class="view">
+      <section class="panel">
+        <div class="panel-title"><h2>任意計算</h2><span>初期値なし・必要値のみ入力</span></div>
+        <div class="grid cols-3 free-grid">
+          <article class="mini-calc">
+            <h3>容量 → 電流</h3>
+            <label>相方式
+              <select id="fcPhase"><option value="3p">三相</option><option value="1p">単相</option></select>
+            </label>
+            <label>容量 kW/kVA<input id="fcCapacity" type="number" inputmode="decimal" /></label>
+            <label>電圧 V<input id="fcVoltage" type="number" inputmode="decimal" /></label>
+            <label>力率<input id="fcPf" type="number" inputmode="decimal" step="0.01" /></label>
+            <button id="fcCurrentBtn" type="button">計算</button>
+            <output id="fcCurrentOut"></output>
+          </article>
+          <article class="mini-calc">
+            <h3>電圧降下</h3>
+            <label>相方式
+              <select id="vdPhase"><option value="3p">三相</option><option value="1p">単相</option></select>
+            </label>
+            <label>電流 A<input id="vdCurrent" type="number" inputmode="decimal" /></label>
+            <label>配線長 m<input id="vdLength" type="number" inputmode="decimal" /></label>
+            <label>ケーブルサイズ sq<input id="vdSize" type="number" inputmode="decimal" /></label>
+            <label>電圧 V<input id="vdVoltage" type="number" inputmode="decimal" /></label>
+            <button id="fcVdBtn" type="button">計算</button>
+            <output id="fcVdOut"></output>
+          </article>
+          <article class="mini-calc">
+            <h3>配管占有率</h3>
+            <label>ケーブル外径 mm<input id="pipeCableDia" type="number" inputmode="decimal" /></label>
+            <label>本数<input id="pipeCableCount" type="number" inputmode="numeric" /></label>
+            <label>厚鋼管
+              <select id="pipeSizeSelect"></select>
+            </label>
+            <button id="fcPipeBtn" type="button">計算</button>
+            <output id="fcPipeOut"></output>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section id="docsView" class="view">
+      <section class="panel docs">
+        <div class="panel-title"><h2>技術資料</h2><span>現場確認用メモ</span></div>
+        <article>
+          <h3>1. 基本式</h3>
+          <ul>
+            <li>三相電流：I = P × 1000 ÷ (√3 × V × pf × η)</li>
+            <li>単相電流：I = P × 1000 ÷ (V × pf × η)</li>
+            <li>三相電圧降下：ΔV = √3 × I × L × (r cosθ + x sinθ)</li>
+            <li>単相電圧降下：ΔV = 2 × I × L × r</li>
+          </ul>
+        </article>
+        <article>
+          <h3>2. 開閉器選定</h3>
+          <p>負荷電流に余裕率を掛け、直近上位の標準ATを推奨開閉器とする。最小開閉器は需要後電流の直近上位とする。電動機始動、突入電流、協調、短絡容量、上位OCR/MCCBとの時限協調は別途確認。</p>
+        </article>
+        <article>
+          <h3>3. ケーブル選定</h3>
+          <p>許容電流、周囲温度補正、敷設補正、電圧降下、既設開閉器容量を同時に確認する。推奨ケーブルは推奨開閉器容量に連動し、最小ケーブルは需要後電流に連動する。</p>
+        </article>
+        <article>
+          <h3>4. 配管・ラック</h3>
+          <ul>
+            <li>配管占有率は32%・48%を目安表示。曲げ、長距離、増設余地がある場合は余裕を取る。</li>
+            <li>ラック幅はケーブル外径合計に保守率を掛けた概算で選定する。</li>
+            <li>ラック支持間隔は、ケーブル質量だけでなく、ラック本体質量、付属品、将来増設、地震時荷重、支持元の強度を確認する。</li>
+          </ul>
+        </article>
+        <article>
+          <h3>5. ラック耐震の考え方</h3>
+          <p>重要度、設置階、支持方法、吊り長さ、支持間隔、建物側下地、アンカー、振れ止め、機器・配線重量を確認する。設計図書、特記仕様、保安規定、客先基準、所轄協議を優先する。</p>
+        </article>
+        <article>
+          <h3>6. 接地・絶縁</h3>
+          <p>C種・D種・ELB併用時の抵抗値、B種接地との関係、接地線サイズ、ボンディング、絶縁抵抗の測定電圧・判定値を現場条件で確認する。</p>
+        </article>
+        <article>
+          <h3>7. 注意</h3>
+          <p>本アプリは施工検討用の概算補助。最終判断は設計図書、内線規程、電気設備技術基準、メーカー資料、主任技術者・設計者・電力会社協議結果を優先する。</p>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="savedDialog">
+    <form method="dialog" class="dialog-card">
+      <h2>保存一覧</h2>
+      <div id="savedList"></div>
+      <button value="close">閉じる</button>
+    </form>
+  </dialog>
+
+  <template id="loadRowTemplate">
+    <tr>
+      <td><input class="load-name" placeholder="例：ポンプ" /></td>
+      <td><input class="load-capacity" type="number" inputmode="decimal" step="0.01" placeholder="0.00" /></td>
+      <td><select class="load-unit"><option value="kW">kW</option><option value="kVA">kVA</option></select></td>
+      <td><input class="load-qty" type="number" inputmode="numeric" step="1" min="1" value="1" /></td>
+      <td><input class="load-demand" type="number" inputmode="decimal" step="1" min="0" value="100" /></td>
+      <td><input class="load-note" /></td>
+      <td><button type="button" class="row-delete" title="削除">×</button></td>
+    </tr>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
