@@ -1,0 +1,19 @@
+{
+  "name": "低圧幹線計算アプリ",
+  "short_name": "低圧幹線計算",
+  "description": "低圧幹線計算・技術資料・保存比較に対応したWebアプリです。負荷用途で照明・コンセント系と動力系を切り替えます。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#1d4ed8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
