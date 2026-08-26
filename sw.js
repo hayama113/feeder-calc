@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-auto-sizing';
+const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-entry';
 const ASSETS = [
   './',
   './index.html',

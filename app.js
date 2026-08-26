@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.3.1';
 
 const VERSIONS = {
-  app: 'Web v3.3.0',
+  app: 'Web v3.3.1',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -518,6 +518,7 @@ function initConduitCalculator(){
   $('conduitFamily').addEventListener('change',()=>{renderConduitOptions();$('conduitResult').classList.add('hidden');});
   $('conduitFillLimit').addEventListener('change',()=>{$('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];});
   $('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value]; $('calculateConduitBtn').addEventListener('click',calculateConduitSizing);
+  $('openConduitCalculator')?.addEventListener('click',()=>{$('conduitCalculatorPanel').scrollIntoView({behavior:'smooth',block:'start'});});
 }
 
 function escapeHtml(v){
