@@ -1,7 +1,10 @@
-const APP_VERSION = '3.2.14';
+Warning: truncated output (original token count: 46785)
+Total output lines: 2215
+
+const APP_VERSION = '3.3.0';
 
 const VERSIONS = {
-  app: 'Web v3.2.14',
+  app: 'Web v3.3.0',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -300,6 +303,18 @@ const FLEXIBLE_CONDUIT = {
   ]
 };
 
+// メーカーを特定しない概算仕上外径。自動選定結果は参考値として扱う。
+const SINGLE_WIRE_REFERENCE_DATA = {
+  'IV': {2:3.4,3.5:4.0,5.5:5.0,8:6.0,14:7.6,22:9.2,38:11.4,60:14.0,100:17.5,150:21.0,200:23.5,250:26.0,325:29.5},
+  'HIV': {2:3.6,3.5:4.2,5.5:5.2,8:6.2,14:7.8,22:9.5,38:11.8,60:14.5,100:18.0,150:21.5,200:24.0,250:26.5,325:30.0},
+  'EM-IE/F': {2:3.6,3.5:4.2,5.5:5.2,8:6.2,14:7.8,22:9.5,38:11.8,60:14.5,100:18.0,150:21.5,200:24.0,250:26.5,325:30.0}
+};
+const CONDUIT_FILL_LIMITS = {
+  32:'標準条件として32%以下で判定します。',
+  48:'48%は、屈曲が少なく電線・ケーブルの引替えが容易な場合に限る条件付き設定です。'
+};
+let conduitWireItems = [];
+
 const DATA_ISSUES = [
   'CD管・PF管の42サイズを参考値として追加済み。最終値は採用品の仕様書で確認してください。',
   'VE管の単位質量を参考値として追加済み。最終値は採用品の仕様書で確認してください。'
@@ -457,6 +472,55 @@ function showToast(msg){
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+function conduitWireTypes(){ return [...Object.keys(SINGLE_WIRE_REFERENCE_DATA),...Object.keys(CABLE_DATA)]; }
+function conduitWireSizes(type){ return SINGLE_WIRE_REFERENCE_DATA[type] ? Object.keys(SINGLE_WIRE_REFERENCE_DATA[type]).map(Number).sort((a,b)=>a-b) : getCableSizes(type); }
+function conduitWireDiameter(type,size){ return Number(SINGLE_WIRE_REFERENCE_DATA[type]?.[size] ?? CABLE_DATA[type]?.[size]?.outerDiameter ?? 0); }
+function allConduitFamilies(){ return {...METAL_CONDUIT,...PLASTIC_CONDUIT,...FLEXIBLE_CONDUIT}; }
+function createConduitWireItem(){ return {id:crypto.randomUUID(),type:'IV',size:'2',count:'1'}; }
+function renderConduitWireRows(){
+  const root=$('conduitWireRows'); if(!root)return; root.innerHTML='';
+  conduitWireItems.forEach(item=>{
+    const row=document.createElement('div'); row.className='conduit-wire-row';
+    const sizes=conduitWireSizes(item.type); if(!sizes.map(String).includes(String(item.size)))item.size=String(sizes[0]||'');
+    const diameter=conduitWireDiameter(item.type,Number(item.size));
+    row.innerHTML=`<label><span>線種</span><select class="js-conduit-wire-type">${conduitWireTypes().map(type=>`<option value="${escapeHtml(type)}" ${type===item.type?'selected':''}>${escapeHtml(type)}</option>`).join('')}</select></label><label><span>サイズ</span><select class="js-conduit-wire-size">${sizes.map(size=>`<option value="${size}" ${String(size)===String(item.size)?'selected':''}>${size}sq</option>`).join('')}</select></label><label><span>本数・条数</span><input class="js-conduit-wire-count" type="number" inputmode="numeric" min="1" step="1" value="${escapeHtml(item.count)}" /></label><div class="readonly-box compact-box"><span>参考外径</span><strong>${diameter?`${formatNumber(diameter,1)}mm`:'-'}</strong></div><button type="button" class="ghost small js-conduit-wire-remove" ${conduitWireItems.length===1?'disabled':''}>削除</button>`;
+    row.querySelector('.js-conduit-wire-type').addEventListener('change',e=>{item.type=e.target.value;item.size=String(conduitWireSizes(item.type)[0]||'');renderConduitWireRows();});
+    row.querySelector('.js-conduit-wire-size').addEventListener('change',e=>{item.size=e.target.value;renderConduitWireRows();});
+    row.querySelector('.js-conduit-wire-count').addEventListener('input',e=>{item.count=e.target.value;});
+    row.querySelector('.js-conduit-wire-remove').addEventListener('click',()=>{conduitWireItems=conduitWireItems.filter(v=>v.id!==item.id);renderConduitWireRows();});
+    root.appendChild(row);
+  });
+}
+function renderConduitOptions(){
+  const families=allConduitFamilies(),familyEl=$('conduitFamily'),nominalEl=$('conduitNominal'); if(!familyEl||!nominalEl)return;
+  const previousFamily=familyEl.value; setSelectOptions(familyEl,Object.keys(families),'選択してください',previousFamily);
+  const previousNominal=nominalEl.value;
+  setSelectOptions(nominalEl,(families[familyEl.value]||[]).map(v=>({value:v.nominal,label:`${v.nominal}（内径 ${formatNumber(v.innerDiameter,1)}mm・参考）`})),'選択してください',previousNominal);
+}
+function conduitAreaFromDiameter(diameter){return Math.PI*Math.pow(Number(diameter||0),2)/4;}
+function calculateConduitSizing(){
+  const family=$('conduitFamily')?.value,nominal=$('conduitNominal')?.value,limit=Number($('conduitFillLimit')?.value||32),conduits=allConduitFamilies()[family]||[];
+  const selected=conduits.find(v=>String(v.nominal)===String(nominal));
+  const invalidItem=conduitWireItems.find(item=>!conduitWireDiameter(item.type,Number(item.size))||Number(item.count)<1);
+  if(!family||!selected||invalidItem)return showToast('電線条件と判定する電線管を入力してください。');
+  const wireArea=conduitWireItems.reduce((sum,item)=>sum+conduitAreaFromDiameter(conduitWireDiameter(item.type,Number(item.size)))*Number(item.count),0);
+  const evaluated=conduits.map(pipe=>{const pipeArea=conduitAreaFromDiameter(pipe.innerDiameter);return{...pipe,pipeArea,fill:pipeArea?wireArea/pipeArea*100:Infinity};});
+  const selectedResult=evaluated.find(v=>String(v.nominal)===String(nominal)),minimumIndex=evaluated.findIndex(v=>v.fill<=limit),minimum=minimumIndex>=0?evaluated[minimumIndex]:null;
+  const length=Number($('conduitLength')?.value||0),bends=Number($('conduitBendCount')?.value||0),mixed=new Set(conduitWireItems.map(v=>v.type)).size>1,reasons=[];
+  if(length>30)reasons.push('配管長が30mを超える'); if(bends>=2)reasons.push('曲がりが2箇所以上'); if(mixed)reasons.push('複数線種を混在'); if(limit===48)reasons.push('48%の条件付き基準を使用'); if($('conduitFutureExpansion')?.checked)reasons.push('将来増設を考慮');
+  const recommendIndex=minimum?Math.min(minimumIndex+(reasons.length?1:0),evaluated.length-1):-1,recommended=recommendIndex>=0?evaluated[recommendIndex]:null,ok=selectedResult.fill<=limit;
+  $('conduitResult').classList.remove('hidden'); $('conduitJudgement').textContent=ok?'OK':'NG'; $('conduitJudgement').className=`judgement ${ok?'good':'bad'}`;
+  $('conduitActualFill').textContent=`${formatNumber(selectedResult.fill,1)}%`; $('conduitLimitResult').textContent=`${limit}%以下`; $('conduitMinimum').textContent=minimum?`${family} ${minimum.nominal}`:'該当なし'; $('conduitRecommended').textContent=recommended?`${family} ${recommended.nominal}`:'該当なし'; $('conduitWireArea').textContent=`${formatNumber(wireArea,1)}mm²`; $('conduitPipeArea').textContent=`${formatNumber(selectedResult.pipeArea,1)}mm²`;
+  $('conduitRecommendationReason').textContent=minimum?(reasons.length?`最小配管 ${minimum.nominal} から1サイズ上を推奨：${reasons.join('、')}。外径・内径は参考値のため採用品仕様を確認してください。`:`施工上の加算条件がないため、最小配管 ${minimum.nominal} を推奨します。外径・内径は参考値です。`):'選択した電線管種類の最大サイズでも設定占有率を満足しません。配管種類、分割配管または施工条件を見直してください。';
+}
+function initConduitCalculator(){
+  if(!$('conduitCalculatorPanel'))return; conduitWireItems=[createConduitWireItem()]; renderConduitWireRows(); renderConduitOptions();
+  $('addConduitWireBtn').addEventListener('click',()=>{if(conduitWireItems.length>=10)return showToast('電線条件は10行までです。');conduitWireItems.push(createConduitWireItem());renderConduitWireRows();});
+  $('conduitFamily').addEventListener('change',()=>{renderConduitOptions();$('conduitResult').classList.add('hidden');});
+  $('conduitFillLimit').addEventListener('change',()=>{$('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];});
+  $('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value]; $('calculateConduitBtn').addEventListener('click',calculateConduitSizing);
 }
 
 function escapeHtml(v){
@@ -1110,239 +1174,7 @@ function showBranchDetailNotes(result){
   const sameMinRec = resultMinSameAsRecommended(result);
   const recNotice = $('resRecSameAsMinNotice');
   if (recNotice) {
-    recNotice.classList.toggle('hidden', !sameMinRec);
-    recNotice.textContent = sameMinRec ? '最小選定結果と同一です。必要最小開閉器・必要最小ケーブルは、推奨選定と同じ条件になるため、最小選定ページは省略しています。' : '';
-  }
-}
-
-function applyResultPageOrder(result){
-  const pages = $('resResultPages');
-  const minCard = $('resMinPageCard');
-  const recCard = $('resRecPageCard');
-  const existingCard = $('resExistingPageCard');
-  const orderLabel = $('resPagesOrderLabel');
-  const isExisting = result?.mode === 'existing';
-  const sameMinRec = resultMinSameAsRecommended(result);
-  const totalPages = resultPageCount(result);
-
-  setTextIfExists('resMinPageTitle', '最小選定結果');
-  setTextIfExists('resRecPageTitle', '推奨選定結果');
-  setTextIfExists('resExistingPageTitle', '既設選定結果');
-
-  if (existingCard) existingCard.classList.toggle('hidden', !isExisting);
-  if (minCard) minCard.classList.toggle('hidden', sameMinRec);
-
-  if (isExisting) {
-    if (existingCard) existingCard.style.order = '1';
-    if (recCard) recCard.style.order = '2';
-    if (minCard) minCard.style.order = sameMinRec ? '3' : '3';
-    setTextIfExists('resExistingPageBadge', `1 / ${totalPages}`);
-    setTextIfExists('resRecPageBadge', `2 / ${totalPages}`);
-    if (!sameMinRec) setTextIfExists('resMinPageBadge', `3 / ${totalPages}`);
-    if (orderLabel) orderLabel.textContent = sameMinRec ? '横スクロール：既設選定 → 推奨選定' : '横スクロール：既設選定 → 推奨選定 → 最小選定';
-  } else {
-    if (recCard) recCard.style.order = '1';
-    if (minCard) minCard.style.order = '2';
-    setTextIfExists('resRecPageBadge', `1 / ${totalPages}`);
-    if (!sameMinRec) setTextIfExists('resMinPageBadge', `2 / ${totalPages}`);
-    if (orderLabel) orderLabel.textContent = sameMinRec ? '横スクロール：推奨選定のみ' : '横スクロール：推奨選定 → 最小選定';
-  }
-
-  showBranchDetailNotes(result);
-  if (pages) {
-    pages.setAttribute('aria-label', isExisting ? (sameMinRec ? '既設・推奨の選定結果' : '既設・推奨・最小の選定結果') : (sameMinRec ? '推奨選定結果' : '推奨・最小の選定結果'));
-    const modeKey = `${isExisting ? 'existing' : 'auto'}-${sameMinRec ? 'same' : 'split'}`;
-    if (pages.dataset.resultMode !== modeKey) {
-      pages.dataset.resultMode = modeKey;
-      requestAnimationFrame(()=>{ pages.scrollLeft = 0; });
-    }
-  }
-}
-
-function renderResult(){
-  const r = state.lastResult;
-  if (!r) return;
-  setTextIfExists('resCalcModeLabel', calculationModeLabel(r));
-  setTextIfExists('resCalcModeDescription', calculationModeDescription(r));
-  applyResultPageOrder(r);
-  setTextIfExists('resExistingPageDescription', r.mode === 'existing' ? '既設開閉器容量を基準にケーブル許容電流・電圧降下を確認します。' : '自動選定モードでは既設開閉器を判定基準にしていません。既設主幹容量を基準にする場合は、計算方式を「既設開閉器指定」に変更してください。');
-  $('resLoadCount').textContent = String(state.loads.length || 0);
-  $('resTotalKW').textContent = formatNumber(r.totalKW,3);
-  $('resTotalKVA').textContent = formatNumber(r.totalKVA,3);
-  $('resTotalCurrent').textContent = formatNumber(r.totalCurrent,2);
-  setTextIfExists('resDropSummaryCommon', `${formatNumber(r.voltageDropV,2)}V / ${formatNumber(r.voltageDropPercent,2)}% / 判定基準 ${getDropLimitPercent(r).toFixed(1)}%以下`);
-  setTextIfExists('resMinSelectionBasis', '必要最小開閉器基準');
-  setTextIfExists('resMinBasisCurrent', r.requiredBreaker ? `${formatNumber(r.requiredBreaker,0)}A` : '-');
-  setTextIfExists('resMinDropLimit', `${getDropLimitPercent(r).toFixed(1)}%以下`);
-  setTextIfExists('resMinMainFactor', (r.requiredMinCableVoltageDropPercent || 0) > getDropLimitPercent(r) ? '電圧降下' : '必要最小開閉器容量');
-  setTextIfExists('resRecSelectionBasis', '推奨開閉器基準');
-  setTextIfExists('resRecBasisCurrent', r.adoptedBreaker ? `${formatNumber(r.adoptedBreaker,0)}A` : '-');
-  setTextIfExists('resRecDropLimit', `${getDropLimitPercent(r).toFixed(1)}%以下`);
-  setTextIfExists('resRecMainFactor', (r.recommendedCableVoltageDropPercent || 0) > getDropLimitPercent(r) ? '電圧降下' : '推奨開閉器容量');
-  $('resRequiredBreaker').textContent = r.requiredBreaker ? `${r.requiredBreaker}A` : '-';
-  $('resAdoptedBreaker').textContent = r.adoptedBreaker ? `${r.adoptedBreaker}A` : '-';
-  if ($('resAdoptedBreaker2')) $('resAdoptedBreaker2').textContent = r.adoptedBreaker ? `${r.adoptedBreaker}A` : '-';
-  const basisLabel = r.cableSelectionBasisLabel || (r.mode === 'existing' ? `既設開閉器 ${r.cableSelectionBasisCurrent || '-'}A 基準` : `推奨開閉器 ${r.adoptedBreaker || '-'}A 基準`);
-  const basisCurrent = r.cableSelectionBasisCurrent || r.adoptedBreaker || 0;
-  if ($('resCableBasisMode')) $('resCableBasisMode').textContent = basisLabel;
-  if ($('resCableBasisCurrent')) $('resCableBasisCurrent').textContent = basisCurrent ? `${formatNumber(basisCurrent,0)}A` : '-';
-  if ($('resCableBasisMode2')) $('resCableBasisMode2').textContent = basisLabel;
-  if ($('resCableBasisCurrent2')) $('resCableBasisCurrent2').textContent = basisCurrent ? `${formatNumber(basisCurrent,0)}A` : '-';
-  const notice = $('resBasisNotice');
-  if (notice) { notice.textContent = cableSelectionBasisNotice(r); notice.classList.remove('hidden'); }
-  $('resRequiredMinCable').textContent = cableLabel(r.requiredMinCableType || r.cableType, r.requiredMinCableSize);
-  $('resRecommendedCable').textContent = cableLabel(r.recommendedCableType || r.cableType, r.recommendedCableSize);
-  $('resSelectedCable').textContent = cableLabel(r.basisCableType || r.cableType, r.basisCableSize || r.cableSize);
-  $('resDropV').textContent = formatNumber(r.voltageDropV,2);
-  $('resDropPct').textContent = formatNumber(r.voltageDropPercent,2);
-  if ($('resRecommendedBreakerMargin')) $('resRecommendedBreakerMargin').textContent = formatNumber(r.recommendedBreakerMarginPercent ?? r.breakerMarginPercent,2);
-  if ($('resRecommendedCapacityMargin')) $('resRecommendedCapacityMargin').textContent = formatNumber(r.recommendedCapacityMarginKW ?? r.capacityMarginKW,2);
-  const basisMarginCard = $('resBasisMarginCard');
-  const basisCapacityCard = $('resBasisCapacityCard');
-  const showBasisMargin = r.mode === 'existing' && Number(r.cableSelectionBasisCurrent || 0);
-  if (basisMarginCard) basisMarginCard.classList.toggle('hidden', !showBasisMargin);
-  if (basisCapacityCard) basisCapacityCard.classList.toggle('hidden', !showBasisMargin);
-  if ($('resBasisMarginLabel')) $('resBasisMarginLabel').textContent = r.cableSelectionBasisMarginLabel || '選定基準裕度 [%]';
-  if ($('resBasisCapacityLabel')) $('resBasisCapacityLabel').textContent = r.cableSelectionBasisCapacityLabel || '選定基準容量裕度 [kW]';
-  if ($('resBasisBreakerMargin')) $('resBasisBreakerMargin').textContent = formatNumber(r.basisBreakerMarginPercent ?? r.breakerMarginPercent,2);
-  if ($('resBasisCapacityMargin')) $('resBasisCapacityMargin').textContent = formatNumber(r.basisCapacityMarginKW ?? r.capacityMarginKW,2);
-  if ($('resBreakerMargin')) $('resBreakerMargin').textContent = formatNumber(r.recommendedBreakerMarginPercent ?? r.breakerMarginPercent,2);
-  if ($('resCapacityMargin')) $('resCapacityMargin').textContent = formatNumber(r.recommendedCapacityMarginKW ?? r.capacityMarginKW,2);
-  $('resMainFactor').textContent = r.mainFactor || '-';
-  const judge = $('resJudgement');
-  judge.textContent = r.judgement;
-  judge.className = `judgement ${r.judgement === '良' ? 'good' : 'bad'}`;
-  setHtmlIfExists('resExistingBreaker', r.existingBreaker ? `${escapeHtml(r.existingBreaker)}A` : '-');
-  if ($('resRequiredBreaker2')) $('resRequiredBreaker2').innerHTML = r.requiredBreaker ? `${r.requiredBreaker}A` : '-';
-  setHtmlIfExists('resExistingBreakerJudge', statusSpan(r.existingBreakerJudge));
-  setHtmlIfExists('resCableJudge', statusSpan(r.cableJudge));
-  $('resBaseAmpacity').textContent = formatNumber(r.baseAmpacity,2);
-  $('resFinalCoef').textContent = formatNumber(r.correctionBreakdown?.final,3);
-  $('resCorrectedAmpacity').textContent = formatNumber(r.correctedAmpacity,2);
-  $('resAdoptedCable2').textContent = cableLabel(r.cableType, r.cableSize);
-  $('resReasons').textContent = r.reasons?.length ? r.reasons.join('、') : '-';
-  $('resDropLimit').textContent = `${getDropLimitPercent(r).toFixed(1)}%以下`;
-  if ($('resDropBasisCurrent')) $('resDropBasisCurrent').textContent = formatNumber(r.voltageDropBasisCurrent,2);
-  setTextIfExists('resMinCorrectedAmpacity', formatNumber(r.requiredMinCableCorrectedAmpacity,2));
-  setTextIfExists('resMinDropPct', formatNumber(r.requiredMinCableVoltageDropPercent,2));
-  setTextIfExists('resMinMassKgM', r.requiredMinCableMassKgM ? formatNumber(r.requiredMinCableMassKgM,3) : '-');
-  setTextIfExists('resMinMassTotalKg', r.requiredMinCableMassTotalKg ? formatNumber(r.requiredMinCableMassTotalKg,2) : '-');
-  setTextIfExists('resMinRackWidth', r.requiredMinCableRackWidth || '-');
-  setTextIfExists('resMinGroundType', r.requiredMinGround?.label || '-');
-  setTextIfExists('resMinGroundSymbol', r.requiredMinGround?.symbol || '-');
-  setTextIfExists('resMinGroundReason', r.requiredMinGround?.selectionReason || '-');
-  setTextIfExists('resMinGroundResistance', r.requiredMinGround?.resistance || '-');
-  setTextIfExists('resMinGroundWireSize', r.requiredMinGround?.wireSize || '-');
-  setTextIfExists('resMinGroundBasis', r.requiredMinGround?.basisLabel || '-');
-  setHtmlIfExists('resMinJudge', branchJudgeHtml((r.requiredMinCableCorrectedAmpacity || 0) >= (r.requiredBreaker || 0) && (r.requiredMinCableVoltageDropPercent || 0) <= getDropLimitPercent(r)));
-  setTextIfExists('resRecCorrectedAmpacity', formatNumber(r.recommendedCableCorrectedAmpacity,2));
-  setTextIfExists('resRecDropPct', formatNumber(r.recommendedCableVoltageDropPercent,2));
-  setTextIfExists('resRecMassKgM', r.recommendedCableMassKgM ? formatNumber(r.recommendedCableMassKgM,3) : '-');
-  setTextIfExists('resRecMassTotalKg', r.recommendedCableMassTotalKg ? formatNumber(r.recommendedCableMassTotalKg,2) : '-');
-  setTextIfExists('resRecRackWidth', r.recommendedCableRackWidth || '-');
-  setTextIfExists('resRecGroundType', r.recommendedGround?.label || '-');
-  setTextIfExists('resRecGroundSymbol', r.recommendedGround?.symbol || '-');
-  setTextIfExists('resRecGroundReason', r.recommendedGround?.selectionReason || '-');
-  setTextIfExists('resRecGroundResistance', r.recommendedGround?.resistance || '-');
-  setTextIfExists('resRecGroundWireSize', r.recommendedGround?.wireSize || '-');
-  setTextIfExists('resRecGroundBasis', r.recommendedGround?.basisLabel || '-');
-  setTextIfExists('resBasisMassKgM', r.basisCableMassKgM ? formatNumber(r.basisCableMassKgM,3) : '-');
-  setTextIfExists('resBasisMassTotalKg', r.basisCableMassTotalKg ? formatNumber(r.basisCableMassTotalKg,2) : '-');
-  setTextIfExists('resBasisRackWidth', r.basisCableRackWidth || '-');
-  setTextIfExists('resBasisGroundType', r.basisGround?.label || '-');
-  setTextIfExists('resBasisGroundSymbol', r.basisGround?.symbol || '-');
-  setTextIfExists('resBasisGroundReason', r.basisGround?.selectionReason || '-');
-  setTextIfExists('resBasisGroundResistance', r.basisGround?.resistance || '-');
-  setTextIfExists('resBasisGroundWireSize', r.basisGround?.wireSize || '-');
-  setTextIfExists('resBasisGroundBasis', r.basisGround?.basisLabel || '-');
-  setHtmlIfExists('resRecJudge', branchJudgeHtml((r.recommendedCableCorrectedAmpacity || 0) >= (r.adoptedBreaker || 0) && (r.recommendedCableVoltageDropPercent || 0) <= getDropLimitPercent(r)));
-  renderNoteList('resMinConstructionNotes', branchConstructionNotes('min', r));
-  renderNoteList('resRecConstructionNotes', branchConstructionNotes('recommended', r));
-  renderNoteList('resBasisConstructionNotes', branchConstructionNotes('basis', r));
-  if (r.mode !== 'existing') {
-    setTextIfExists('resCableBasisMode', '既設開閉器未指定');
-    setTextIfExists('resCableBasisCurrent', '-');
-    setTextIfExists('resSelectedCable', '-');
-    setTextIfExists('resBasisMassKgM', '-');
-    setTextIfExists('resBasisMassTotalKg', '-');
-    setTextIfExists('resBasisRackWidth', '-');
-    setTextIfExists('resBasisGroundType', '-');
-    setTextIfExists('resBasisGroundSymbol', '-');
-    setTextIfExists('resBasisGroundReason', '-');
-    setTextIfExists('resBasisGroundResistance', '-');
-    setTextIfExists('resBasisGroundWireSize', '-');
-    setTextIfExists('resBasisGroundBasis', '-');
-    setTextIfExists('resExistingBreaker', '-');
-    setHtmlIfExists('resExistingBreakerJudge', statusSpan('-'));
-    setHtmlIfExists('resCableJudge', statusSpan('-'));
-  }
-  const failRoot = $('resFailReasons');
-  failRoot.innerHTML = '';
-  if (!r.failReasons.length) {
-    const ok = document.createElement('div'); ok.className = 'readonly-box compact-box'; ok.innerHTML = '<strong class="status-ok">不適合項目はありません。</strong>'; failRoot.appendChild(ok);
-  } else r.failReasons.forEach(reason=>{ const div = document.createElement('div'); div.className = 'fail-item'; div.textContent = reason; failRoot.appendChild(div); });
-  const loadRoot = $('loadResultList');
-  loadRoot.innerHTML = '';
-  r.loadDetails.forEach((item,index)=>{
-    const card = document.createElement('div'); card.className = 'load-result-card';
-    card.innerHTML = `<div class="row"><strong>負荷${index+1}</strong><span class="muted">${escapeHtml(item.name || '-')}</span></div><div class="readonly-grid top-gap"><div><span>入力方式</span><strong>${escapeHtml(item.inputType || '-')}</strong></div><div><span>負荷値</span><strong>${escapeHtml(item.value || '-')} ${escapeHtml(item.inputType || '')}</strong></div><div><span>${formulaTriggerHtml('current','換算電流 [A]', item.inputType, `result-${index}-current`)}</span><strong>${formatNumber(item.current,2)}</strong></div><div><span>${formulaTriggerHtml('kw','換算容量 [kW]', item.inputType, `result-${index}-kw`)}</span><strong>${formatNumber(item.kw,3)}</strong></div><div><span>${formulaTriggerHtml('kva','換算容量 [kVA]', item.inputType, `result-${index}-kva`)}</span><strong>${formatNumber(item.kva,3)}</strong></div></div>`;
-    loadRoot.appendChild(card);
-  });
-  const noteRoot = $('resConstructionNotes'); noteRoot.innerHTML = '';
-  r.constructionNotes.forEach(note=>{ const div = document.createElement('div'); div.className = 'readonly-box compact-box'; div.innerHTML = `<strong class="muted">${escapeHtml(note)}</strong>`; noteRoot.appendChild(div); });
-  const memoRoot = $('resRootMemo'); memoRoot.innerHTML = '';
-  r.rootMemo.forEach(note=>{ const div = document.createElement('div'); div.className = 'readonly-box compact-box'; div.innerHTML = `<strong class="muted">${escapeHtml(note)}</strong>`; memoRoot.appendChild(div); });
-}
-
-function renderLoadCards(){
-  normalizeLoads();
-  const root = $('loadCards'); root.innerHTML = '';
-  $('loadPositionLabel').textContent = state.loads.length ? `1 / ${state.loads.length}` : '- / -';
-  if (!state.loads.length) { root.innerHTML = '<div class="load-card muted">負荷数を選択してください。</div>'; return; }
-  state.loads.forEach((load,index)=>{
-    const card = document.createElement('div'); card.className = 'load-card';
-    card.innerHTML = `<div class="row"><strong>${escapeHtml(load.title)}</strong><span class="muted">${index+1} / ${state.loads.length}</span></div><div class="grid two top-gap"><label><span>負荷名称</span><input id="load-name-${load.id}" type="text" value="${escapeHtml(load.name)}" /></label><label><span>入力方式</span><select id="load-type-${load.id}"></select></label><label><span>負荷値</span><input id="load-value-${load.id}" type="number" inputmode="decimal" value="${load.value === '' ? '' : escapeHtml(load.value)}" /></label><div class="readonly-box compact-box"><span>入力方式</span><strong id="load-type-label-${load.id}">${escapeHtml(load.inputType || '-')}</strong></div></div><div class="readonly-grid top-gap"><div><span>${formulaTriggerHtml('current','換算電流 [A]', load.inputType, `load-${load.id}-current`)}</span><strong id="load-current-${load.id}">${formatNumber(currentForLoad(load),2)}</strong></div><div><span>${formulaTriggerHtml('kw','換算容量 [kW]', load.inputType, `load-${load.id}-kw`)}</span><strong id="load-kw-${load.id}">${formatNumber(kwForLoad(load),3)}</strong></div><div><span>${formulaTriggerHtml('kva','換算容量 [kVA]', load.inputType, `load-${load.id}-kva`)}</span><strong id="load-kva-${load.id}">${formatNumber(kvaForLoad(load),3)}</strong></div></div>`;
-    root.appendChild(card);
-    const nameInput = document.getElementById(`load-name-${load.id}`), typeSelect = document.getElementById(`load-type-${load.id}`), valueInput = document.getElementById(`load-value-${load.id}`);
-    setSelectOptions(typeSelect, ['kW','A','kVA'], '選択してください', load.inputType);
-    nameInput.addEventListener('input',()=>{ load.name = nameInput.value; validateRealtime(); persistState(); });
-    typeSelect.addEventListener('change',()=>{ load.inputType = typeSelect.value; updateLoadDerivedValues(load); renderAmpacitySection(); validateRealtime(); persistState(); });
-    wireNumericInput(valueInput,()=>{ load.value = valueInput.value; updateLoadDerivedValues(load); renderAmpacitySection(); validateRealtime(); persistState(); });
-  });
-  root.onscroll = updateLoadPositionLabel;
-}
-function updateLoadDerivedValues(load){
-  document.querySelectorAll(`[data-formula-source^="load-${load.id}-"]`).forEach(btn=>{ btn.dataset.inputType = load.inputType || ''; });
-  hideFormulaPopup();
-  document.getElementById(`load-type-label-${load.id}`).textContent = load.inputType || '-';
-  document.getElementById(`load-current-${load.id}`).textContent = formatNumber(currentForLoad(load),2);
-  document.getElementById(`load-kw-${load.id}`).textContent = formatNumber(kwForLoad(load),3);
-  document.getElementById(`load-kva-${load.id}`).textContent = formatNumber(kvaForLoad(load),3);
-}
-function updateLoadPositionLabel(){
-  const root = $('loadCards'), children = [...root.children];
-  if (!children.length) return;
-  let closest = 0, best = Infinity;
-  children.forEach((el,index)=>{ const diff = Math.abs(el.getBoundingClientRect().left - root.getBoundingClientRect().left); if (diff < best) { best = diff; closest = index; }});
-  $('loadPositionLabel').textContent = `${closest+1} / ${children.length}`;
-}
-
-function buildCableTable(type,label){
-  const rows = Object.entries(CABLE_DATA[type] || {}).map(([size,info])=>({sizeSq:size, outerDiameter:info.outerDiameter, massKgKm:info.massKgKm, resistance:info.resistance, ampacity:info.ampacity}));
-  const note = type === 'CV-1C'
-    ? `${label}は単心1本あたりの参考値です。計算結果では電源方式に応じて×2本/×3本/×4本として概算質量・ラック幅へ反映します。許容電流・外径・質量は最終的に仕様書で確認してください。`
-    : `${label}の参考値です。許容電流・外径・質量は最終的に仕様書で確認してください。`;
-  return {note, headers:['サイズ [sq]','許容電流 [A]','外径 [mm]','概算質量 [kg/km]','導体抵抗 [Ω/km]'], keys:['sizeSq','ampacity','outerDiameter','massKgKm','resistance'], rows};
-}
-function textDoc(note, lines){ return {note, headers:['項目','内容'], keys:['title','body'], rows:lines.map(v=>({title:v[0],body:v[1]}))}; }
-function buildStandardsScopeDoc(){ return textDoc('公開法令・電技解釈で確認できる最低基準と、内線規程で確認すべき代表項目を整理しています。数値は参考表示であり、最新版の規程・設計仕様・保安規程・現場条件を優先してください。', [['アプリで反映した範囲','低圧電圧降下、低圧絶縁抵抗、A/B/C/D種接地抵抗、機械器具外箱の接地種別、地絡遮断装置の確認項目'],['内線規程の扱い','内線規程は民間規格です。技術資料には現場確認用の代表値・確認欄を表示し、詳細な適用条件は原本で確認する前提です'],['法令との関係','電気設備技術基準・電技解釈の最低基準を下回らないことを前提に、内線規程・設計仕様・機器仕様・保護協調を確認してください'],['注意','本アプリは参考計算です。施工可否や届出要否を確定するものではありません']]); }
-function buildVoltageDropCodeDoc(){ return {note:'内線規程1310節の低圧配線電圧降下許容値として一般に参照される区分です。アプリの計算判定は入力条件の「電圧降下判定基準」で5.0%又は3.0%を選択できます。供給方式・こう長に応じた最終判断は本表と設計仕様で確認してください。', headers:['こう長','電気使用場所内変圧器から供給','電気事業者から低圧供給','確認メモ'], keys:['length','privateTransformer','utilityLowVoltage','note'], rows:[{length:'60m以下',privateTransformer:'幹線3%以下 / 分岐2%以下',utilityLowVoltage:'幹線2%以下 / 分岐2%以下',note:'幹線・分岐を個別に確認。'},{length:'60m超過〜120m以下',privateTransformer:'合計5%以下',utilityLowVoltage:'合計4%以下',note:'幹線＋分岐の合計で確認。'},{length:'120m超過〜200m以下',privateTransformer:'合計6%以下',utilityLowVoltage:'合計5%以下',note:'長距離幹線では始動時電圧降下も別途確認。'},{length:'200m超過',privateTransformer:'合計7%以下',utilityLowVoltage:'合計6%以下',note:'詳細計算・設備仕様・電力会社協議を優先。'}]}; }
-function buildInsulationResistanceDoc(){ return {note:'低圧電路の絶縁抵抗値の最低基準です。開閉器又は過電流遮断器で区切ることのできる電路ごとに確認します', headers:['電路の使用電圧区分','条件・確認方法','判定値','備考'], keys:['voltage','condition','resistance','note'], rows:[{voltage:'300V以下',condition:'対地電圧150V以下',resistance:'0.1MΩ以上',note:'100V回路等'},{voltage:'300V以下',condition:'上記以外',resistance:'0.2MΩ以上',note:'三相200V回路等'},{voltage:'300V超過',condition:'低圧範囲',resistance:'0.4MΩ以上',note:'三相400V回路等'},{voltage:'充電回路',condition:'停電・開放不可など　クランプメーター等で漏えい電流を測定',resistance:'1mA以下',note:'電技解釈上の代替確認　現場手順・停電可否を確認'}]}; }
-function buildGroundResistanceCodeDoc(){ return {note:'A/B/C/D種接地工事の接地抵抗値の代表基準です。B種は地絡電流Ig及び遮断時間条件で算定します', headers:['接地種別','接地抵抗値','主な用途','注意'], keys:['type','resistance','use','note'], rows:[{type:'A種',resistance:'10Ω以下',use:'高圧・特別高圧機器外箱等',note:'避雷器等では個別条件も確認'},{type:'B種',resistance:'150/Ig 以下（条件により300/Ig又は600/Ig）',use:'変圧器二次側中性点等の系統接地',note:'機械器具外箱の保護接地とは用途が異なる'},{type:'C種',resistance:'10Ω以下',use:'300V超過の低圧機器外箱等',note:'0.5秒以内に自動遮断する装置を施設する場合は500Ω以下'},{type:'D種',resistance:'100Ω以下',use:'300V以下の低圧機器外箱等',note:'0.5秒以内に自動遮断する装置を施設する場合は500Ω以下'}]}; }
-function buildGroundApplicationCodeDoc(){ return {note:'機械器具の金属製外箱等へ施す保護接地の区分です。B種は変圧器二次側中性点等の系統接地として別項目で確認します', headers:['区分','接地工事','主な確認点'], keys:['voltage','ground','note'], rows:[{voltage:'低圧 300V以下',ground:'D種接地工事　図面・端子記号：ED',note:'対地電圧、設置場所、水気、地絡遮断装置の有無を確認'},{voltage:'低圧 300V超過',ground:'C種接地工事　図面・端子記号：EC',note:'400V級動力機器など　地絡遮断装置・接地抵抗を確認'},{voltage:'高圧又は特別高圧',ground:'A種接地工事',note:'高圧機器外箱、キュービクル内機器等'},{voltage:'変圧器二次側中性点等',ground:'B種接地工事',note:'系統接地として扱う　機械器具外箱のA/C/D種保護接地と混同しない'}]}; }
-function buildEarthLeakageBreakerDoc(){ return textDoc('地絡遮断装置の施設確認です。金属製外箱を有する使用電圧60V超の低圧機械器具に接続する電路では、原則として地絡時に自動遮断する装置の要否を確認します。', [['原則','金属製外箱を有する使用電圧60V超の低圧機械器具に接続する電路は、地絡時に自動的に遮断する装置を確認します。'],['例外確認','乾燥場所、対地電圧150V以下で水気のない場所、二重絶縁構造、絶縁変圧器、接地抵抗3Ω以下などの例外条件があります。'],['400V級の注意','使用電圧300V超の低圧電路では、地絡遮断・C種接地・保護協調を特に確認してください。'],['アプリでの扱い','本アプリはELB要否を自動判定しません。施工前チェック項目として表示します。']]); }
-function buildStandardsChecklistDoc(){ return textDoc('計算結果を現場で採用する前の最低確認項目です。各項目は任意計算でも概算確認できます', [['電圧降下','式：三相 ΔV=√3×I×R×L/1000　単相2線 ΔV=2×I×R×L/1000　電圧降下率=ΔV/V×100'],['許容電流','式：補正後許容電流=基準許容電流×温度補正×条数補正×敷設方法補正×敷設条件補正'],['過電流保護','式：必要最小開閉器=合計電流以上の標準容量　推奨開閉器=合計電流÷裕度設定を標準容量へ丸め'],['接地','式：接地種別は使用電圧区分から推定　接地線サイズは開閉器容量別の参考表で確認'],['絶縁','式：絶縁抵抗基準 0.1MΩ/0.2MΩ/0.4MΩ　測定困難時は漏えい電流1mA以下を確認'],['施工','曲げ半径、入線率、プルボックス、支持間隔、耐震支持、防水・防食、端末処理を確認']]); }
-function buildVoltageCriteria(){ return textDoc('電圧降下の判定基準は入力条件で5.0%以下又は3.0%以下を選択できます。選択値に応じて最小・推奨・既設の各ケーブル選定結果を再判定します。供給方式・こう長により内線規程上の目安が変わるため、「規程・法令基準」内の電圧降下許容値も確認してください。', [['現在のアプリ判定基準',`${getDropLimitPercent().toFixed(1)}%以下`],['内線規程確認','60m以下は幹線・分岐を個別確認、60m超過は供給方式別の合計許容値を確認します。'],['注意','長距離配線・始動電流が大きい負荷・電圧変動が厳しい設備では、仕様条件を優先してください。'],['実務メモ','アプリは参考計算です。最終判断は現場条件・内線規程・設計仕様で確認してください。']]); }
+    recNo…6785 tokens truncated…'注意','長距離配線・始動電流が大きい負荷・電圧変動が厳しい設備では、仕様条件を優先してください。'],['実務メモ','アプリは参考計算です。最終判断は現場条件・内線規程・設計仕様で確認してください。']]); }
 function buildFormulaCurrent(){ return textDoc('電流換算の基本式です。', [['三相 kW → A','I = P × 1000 ÷ (√3 × V × 力率 × 効率)'],['単相 kW → A','I = P × 1000 ÷ (V × 力率 × 効率)。照明・コンセント系では効率を1.0扱い'],['三相 kVA → A','I = kVA × 1000 ÷ (√3 × V)'],['単相 kVA → A','I = kVA × 1000 ÷ V'],['A入力','入力された電流値をそのまま換算電流として扱います。']]); }
 function buildFormulaDrop(){ return textDoc('電圧降下の基本式です。', [['三相','e = √3 × I × R × L ÷ 1000'],['単相','e = 2 × I × R × L ÷ 1000'],['百分率','電圧降下率[%] = e ÷ 電圧 × 100'],['注意','リアクタンス成分は簡易計算では省略しています。長距離・大容量では詳細検討してください。']]); }
 function buildFormulaCoef(){ return textDoc('許容電流補正の基本式です。', [['補正後許容電流','基準許容電流 × 温度補正 × 条数補正 × 敷設方法補正 × 敷設条件補正'],['温度補正','20〜50℃の係数テーブルを使用'],['条数補正','1〜6条の係数テーブルを使用'],['敷設方法補正','気中・ラック・配管の選択値を使用'],['敷設条件補正','一般・密集・日射ありの選択値を使用'],['注意','密集・日射・管路・ラック等の現場条件を反映して確認してください。']]); }
@@ -2150,5 +1982,5 @@ function runDisclaimer(){
   $('disclaimerNextBtn').onclick = ()=>{ if (disclaimerStep === 1) { disclaimerStep = 2; $('disclaimerTitle').textContent = '重要な確認'; $('disclaimerBody').textContent = '最終判断は利用者責任で行ってください。内線規定、関係法令、現場条件、機器仕様、保護協調等を必ず確認してください。'; } else { localStorage.setItem(STORAGE.disclaimer,'accepted'); $('disclaimerDialog').close(); } };
 }
 function registerSW(){ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-function init(){ ensureDocsUpgraded(); bindEvents(); applySettingsValues(); renderAll(); switchScreen('calc'); switchSavedTab('history'); runDisclaimer(); registerSW(); }
+function init(){ ensureDocsUpgraded(); bindEvents(); initConduitCalculator(); applySettingsValues(); renderAll(); switchScreen('calc'); switchSavedTab('history'); runDisclaimer(); registerSW(); }
 document.addEventListener('DOMContentLoaded', init);
