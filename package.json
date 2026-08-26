@@ -1,0 +1,7 @@
+{
+  "name": "feeder-calc",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
