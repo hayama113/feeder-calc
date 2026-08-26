@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260612-req032-optional-calc-ui';
+const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-auto-sizing';
 const ASSETS = [
   './',
   './index.html',
@@ -32,4 +32,3 @@ self.addEventListener('fetch', event => {
       .catch(() => caches.match(event.request).then(cached => cached || caches.match('./index.html')))
   );
 });
-

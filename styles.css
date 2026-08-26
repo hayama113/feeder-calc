@@ -118,6 +118,13 @@ button.full,.full{width:100%;}
 .hidden{display:none !important;}
 .muted{color:var(--muted);line-height:1.6;}
 .input-error{border-color:var(--danger) !important;background:var(--danger-bg) !important;}
+.conduit-wire-row{display:grid;grid-template-columns:1.35fr 1fr .8fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-3);}
+.conduit-wire-row .readonly-box{min-height:48px;padding:9px 11px;}
+.conduit-wire-row .readonly-box strong{font-size:var(--fs-base);}
+.conduit-wire-row button[disabled]{opacity:.45;cursor:not-allowed;}
+.checkbox-label{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;}
+.checkbox-label input{width:auto;margin:0;}
+.checkbox-label span{margin:0;color:var(--text);}
 .calc-action-panel{scroll-margin-top:16px;}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.95);backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:30;}
 .dialog{border:none;padding:0;background:transparent;}
@@ -161,7 +168,7 @@ button.full,.full{width:100%;}
 .compare-table th:first-child,.compare-table td:first-child{position:sticky;left:0;z-index:5;background:#f8fbff;min-width:170px;}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:92px;background:#0f172a;color:#fff;padding:10px 14px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
 #toast.show{opacity:1;}
-@media (max-width:840px){#app{padding:12px 12px 98px;} .grid.two,.result-grid,.result-grid.two-column-narrow,.segmented.two-col,.segmented.three-col{grid-template-columns:1fr;} .load-card{flex-basis:min(92vw,560px);max-width:min(92vw,560px);} .bottom-nav{gap:7px;padding-left:10px;padding-right:10px;} .nav-btn{padding:10px 8px;}}
+@media (max-width:840px){#app{padding:12px 12px 98px;} .grid.two,.result-grid,.result-grid.two-column-narrow,.segmented.two-col,.segmented.three-col{grid-template-columns:1fr;} .load-card{flex-basis:min(92vw,560px);max-width:min(92vw,560px);} .conduit-wire-row{grid-template-columns:1fr 1fr;} .conduit-wire-row .readonly-box{grid-column:1 / 2;} .bottom-nav{gap:7px;padding-left:10px;padding-right:10px;} .nav-btn{padding:10px 8px;}}
 @media print{.topbar,.bottom-nav,.inline-actions,.calc-action-panel,dialog,#installBtn,#toggleResultBtn,#saveResultTopBtn,#saveResultBottomBtn,#toast{display:none !important;} body,#app{background:#fff;padding:0;} .screen{display:none !important;} #screen-calc.active,#screen-docs.active,#screen-saved.active{display:grid !important;} .panel,.result-card,.subpanel,.load-result-card,.saved-card,.compare-card,.doc-group-card,.doc-item-card{box-shadow:none;break-inside:avoid;}}
 
 /* REQ-011: 計算結果を最小・推奨・既設の横スクロールページに整理 */
