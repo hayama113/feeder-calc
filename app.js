@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.5';
+const APP_VERSION = '3.3.6';
 
 const VERSIONS = {
-  app: 'Web v3.3.5',
+  app: 'Web v3.3.6',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -305,6 +305,36 @@ const SINGLE_WIRE_REFERENCE_DATA = {
   'IV': {2:3.4,3.5:4.0,5.5:5.0,8:6.0,14:7.6,22:9.2,38:11.4,60:14.0,100:17.5,150:21.0,200:23.5,250:26.0,325:29.5},
   'EM-IE/F': {2:3.6,3.5:4.2,5.5:5.2,8:6.2,14:7.8,22:9.5,38:11.8,60:14.5,100:18.0,150:21.5,200:24.0,250:26.5,325:30.0}
 };
+function buildReferenceCableOptions(configs, counts, unit) {
+  const options = {};
+  let id = 1;
+  configs.forEach(config => {
+    counts.forEach(count => {
+      options[id++] = {
+        outerDiameter: Number((config.offset + config.factor * Math.sqrt(count * (unit === 'P' ? 2 : 1))).toFixed(1)),
+        displaySize: `${config.size}mm-${count}${unit}`
+      };
+    });
+  });
+  return options;
+}
+const HP_REFERENCE_DATA = buildReferenceCableOptions([
+  {size:'0.9',offset:3.3,factor:2.0},
+  {size:'1.2',offset:3.6,factor:2.35}
+], Array.from({length:19},(_,index)=>index+2), 'C');
+const AE_REFERENCE_DATA = buildReferenceCableOptions([
+  {size:'0.9',offset:3.0,factor:1.9},
+  {size:'1.2',offset:3.3,factor:2.2}
+], Array.from({length:9},(_,index)=>index+2), 'C');
+const CPEV_REFERENCE_DATA = buildReferenceCableOptions([
+  {size:'0.65',offset:3.5,factor:1.55},
+  {size:'0.9',offset:3.8,factor:1.9},
+  {size:'1.2',offset:4.1,factor:2.2}
+], Array.from({length:30},(_,index)=>index+1), 'P');
+const CPEVS_REFERENCE_DATA = Object.fromEntries(Object.entries(CPEV_REFERENCE_DATA).map(([key,value])=>[
+  key,
+  {...value,outerDiameter:Number((value.outerDiameter+0.8).toFixed(1))}
+]));
 // ケーブル保護管選定専用データ。VVFのサイズは導体径、外径は長径側の参考値。
 const PROTECTIVE_CABLE_REFERENCE_DATA = {
   'CV': CABLE_DATA['CV-1C'],
@@ -315,7 +345,13 @@ const PROTECTIVE_CABLE_REFERENCE_DATA = {
   'CVT': CABLE_DATA.CVT,
   'CVQ': CABLE_DATA.CVQ,
   'VVF-2C': {1.6:{outerDiameter:9.4,displaySize:'1.6mm'},2.0:{outerDiameter:10.5,displaySize:'2.0mm'},2.6:{outerDiameter:12.5,displaySize:'2.6mm'}},
-  'VVF-3C': {1.6:{outerDiameter:13.0,displaySize:'1.6mm'},2.0:{outerDiameter:14.0,displaySize:'2.0mm'},2.6:{outerDiameter:17.0,displaySize:'2.6mm'}}
+  'VVF-3C': {1.6:{outerDiameter:13.0,displaySize:'1.6mm'},2.0:{outerDiameter:14.0,displaySize:'2.0mm'},2.6:{outerDiameter:17.0,displaySize:'2.6mm'}},
+  'HP': HP_REFERENCE_DATA,
+  'AE': AE_REFERENCE_DATA,
+  'CPEV': CPEV_REFERENCE_DATA,
+  'CPEVS': CPEVS_REFERENCE_DATA,
+  '5C-FB': {1:{outerDiameter:7.7,displaySize:'5C-FB'}},
+  '7C-FB': {1:{outerDiameter:10.2,displaySize:'7C-FB'}}
 };
 const CONDUIT_FILL_LIMITS = {
   32:'標準条件として32%以下で判定します。',
@@ -323,7 +359,7 @@ const CONDUIT_FILL_LIMITS = {
 };
 const CONDUIT_USAGE_HINTS = {
   wiring:'IV・EM-IE/Fを電線管に収める場合。占有率32%または条件付き48%で判定します。',
-  protection:'CV・CVT・VVF等のケーブル保護管。管の有効内径をケーブル仕上外径（複数本は参考束径）の1.5倍以上として判定します。'
+  protection:'CV・VVF・制御線・弱電線等のケーブル保護管。管の有効内径をケーブル仕上外径（複数本は参考束径）の1.5倍以上として判定します。'
 };
 let conduitWireItems = [];
 
