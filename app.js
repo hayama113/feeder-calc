@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.1';
+const APP_VERSION = '3.3.2';
 
 const VERSIONS = {
-  app: 'Web v3.3.1',
+  app: 'Web v3.3.2',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -443,7 +443,7 @@ let deferredPrompt = null;
 let disclaimerStep = 0;
 
 const $ = id => document.getElementById(id);
-const screens = {calc:$('screen-calc'), docs:$('screen-docs'), saved:$('screen-saved'), settings:$('screen-settings')};
+const screens = {calc:$('screen-calc'), conduit:$('screen-conduit'), docs:$('screen-docs'), saved:$('screen-saved'), settings:$('screen-settings')};
 
 function persistState(){
   const uiPrefs = {
@@ -518,7 +518,8 @@ function initConduitCalculator(){
   $('conduitFamily').addEventListener('change',()=>{renderConduitOptions();$('conduitResult').classList.add('hidden');});
   $('conduitFillLimit').addEventListener('change',()=>{$('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];});
   $('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value]; $('calculateConduitBtn').addEventListener('click',calculateConduitSizing);
-  $('openConduitCalculator')?.addEventListener('click',()=>{$('conduitCalculatorPanel').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('openConduitCalculator')?.addEventListener('click',()=>switchScreen('conduit'));
+  $('returnCalcFromConduit')?.addEventListener('click',()=>switchScreen('calc'));
 }
 
 function escapeHtml(v){
