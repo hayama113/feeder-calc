@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-auto-result';
+const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-protection-mode';
 const ASSETS = [
   './',
   './index.html',
