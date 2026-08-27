@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.2';
+const APP_VERSION = '3.3.3';
 
 const VERSIONS = {
-  app: 'Web v3.3.2',
+  app: 'Web v3.3.3',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -483,10 +483,10 @@ function renderConduitWireRows(){
     const sizes=conduitWireSizes(item.type); if(!sizes.map(String).includes(String(item.size)))item.size=String(sizes[0]||'');
     const diameter=conduitWireDiameter(item.type,Number(item.size));
     row.innerHTML=`<label><span>線種</span><select class="js-conduit-wire-type">${conduitWireTypes().map(type=>`<option value="${escapeHtml(type)}" ${type===item.type?'selected':''}>${escapeHtml(type)}</option>`).join('')}</select></label><label><span>サイズ</span><select class="js-conduit-wire-size">${sizes.map(size=>`<option value="${size}" ${String(size)===String(item.size)?'selected':''}>${size}sq</option>`).join('')}</select></label><label><span>本数・条数</span><input class="js-conduit-wire-count" type="number" inputmode="numeric" min="1" step="1" value="${escapeHtml(item.count)}" /></label><div class="readonly-box compact-box"><span>参考外径</span><strong>${diameter?`${formatNumber(diameter,1)}mm`:'-'}</strong></div><button type="button" class="ghost small js-conduit-wire-remove" ${conduitWireItems.length===1?'disabled':''}>削除</button>`;
-    row.querySelector('.js-conduit-wire-type').addEventListener('change',e=>{item.type=e.target.value;item.size=String(conduitWireSizes(item.type)[0]||'');renderConduitWireRows();});
-    row.querySelector('.js-conduit-wire-size').addEventListener('change',e=>{item.size=e.target.value;renderConduitWireRows();});
-    row.querySelector('.js-conduit-wire-count').addEventListener('input',e=>{item.count=e.target.value;});
-    row.querySelector('.js-conduit-wire-remove').addEventListener('click',()=>{conduitWireItems=conduitWireItems.filter(v=>v.id!==item.id);renderConduitWireRows();});
+    row.querySelector('.js-conduit-wire-type').addEventListener('change',e=>{item.type=e.target.value;item.size=String(conduitWireSizes(item.type)[0]||'');renderConduitWireRows();calculateConduitSizing();});
+    row.querySelector('.js-conduit-wire-size').addEventListener('change',e=>{item.size=e.target.value;renderConduitWireRows();calculateConduitSizing();});
+    row.querySelector('.js-conduit-wire-count').addEventListener('input',e=>{item.count=e.target.value;calculateConduitSizing();});
+    row.querySelector('.js-conduit-wire-remove').addEventListener('click',()=>{conduitWireItems=conduitWireItems.filter(v=>v.id!==item.id);renderConduitWireRows();calculateConduitSizing();});
     root.appendChild(row);
   });
 }
@@ -501,23 +501,32 @@ function calculateConduitSizing(){
   const family=$('conduitFamily')?.value,nominal=$('conduitNominal')?.value,limit=Number($('conduitFillLimit')?.value||32),conduits=allConduitFamilies()[family]||[];
   const selected=conduits.find(v=>String(v.nominal)===String(nominal));
   const invalidItem=conduitWireItems.find(item=>!conduitWireDiameter(item.type,Number(item.size))||Number(item.count)<1);
-  if(!family||!selected||invalidItem)return showToast('電線条件と判定する電線管を入力してください。');
+  if(!family||invalidItem){$('conduitResult')?.classList.add('hidden');return;}
   const wireArea=conduitWireItems.reduce((sum,item)=>sum+conduitAreaFromDiameter(conduitWireDiameter(item.type,Number(item.size)))*Number(item.count),0);
   const evaluated=conduits.map(pipe=>{const pipeArea=conduitAreaFromDiameter(pipe.innerDiameter);return{...pipe,pipeArea,fill:pipeArea?wireArea/pipeArea*100:Infinity};});
   const selectedResult=evaluated.find(v=>String(v.nominal)===String(nominal)),minimumIndex=evaluated.findIndex(v=>v.fill<=limit),minimum=minimumIndex>=0?evaluated[minimumIndex]:null;
   const length=Number($('conduitLength')?.value||0),bends=Number($('conduitBendCount')?.value||0),mixed=new Set(conduitWireItems.map(v=>v.type)).size>1,reasons=[];
   if(length>30)reasons.push('配管長が30mを超える'); if(bends>=2)reasons.push('曲がりが2箇所以上'); if(mixed)reasons.push('複数線種を混在'); if(limit===48)reasons.push('48%の条件付き基準を使用'); if($('conduitFutureExpansion')?.checked)reasons.push('将来増設を考慮');
-  const recommendIndex=minimum?Math.min(minimumIndex+(reasons.length?1:0),evaluated.length-1):-1,recommended=recommendIndex>=0?evaluated[recommendIndex]:null,ok=selectedResult.fill<=limit;
-  $('conduitResult').classList.remove('hidden'); $('conduitJudgement').textContent=ok?'OK':'NG'; $('conduitJudgement').className=`judgement ${ok?'good':'bad'}`;
-  $('conduitActualFill').textContent=`${formatNumber(selectedResult.fill,1)}%`; $('conduitLimitResult').textContent=`${limit}%以下`; $('conduitMinimum').textContent=minimum?`${family} ${minimum.nominal}`:'該当なし'; $('conduitRecommended').textContent=recommended?`${family} ${recommended.nominal}`:'該当なし'; $('conduitWireArea').textContent=`${formatNumber(wireArea,1)}mm²`; $('conduitPipeArea').textContent=`${formatNumber(selectedResult.pipeArea,1)}mm²`;
-  $('conduitRecommendationReason').textContent=minimum?(reasons.length?`最小配管 ${minimum.nominal} から1サイズ上を推奨：${reasons.join('、')}。外径・内径は参考値のため採用品仕様を確認してください。`:`施工上の加算条件がないため、最小配管 ${minimum.nominal} を推奨します。外径・内径は参考値です。`):'選択した電線管種類の最大サイズでも設定占有率を満足しません。配管種類、分割配管または施工条件を見直してください。';
+  const recommendIndex=minimum?minimumIndex:-1,recommended=recommendIndex>=0?evaluated[recommendIndex]:null;
+  $('conduitResult').classList.remove('hidden');
+  $('conduitSelectedJudgementWrap').classList.toggle('hidden',!selectedResult);
+  if(selectedResult){const ok=selectedResult.fill<=limit;$('conduitJudgement').textContent=ok?'OK':'NG';$('conduitJudgement').className=`judgement ${ok?'good':'bad'}`;}
+  const displayPipe=selectedResult||recommended;
+  $('conduitActualFillLabel').textContent=selectedResult?'選択配管の占有率':'推奨配管の占有率';
+  $('conduitPipeAreaLabel').textContent=selectedResult?'選択管内面積':'推奨管内面積';
+  $('conduitActualFill').textContent=displayPipe?`${formatNumber(displayPipe.fill,1)}%`:'-'; $('conduitLimitResult').textContent=`${limit}%以下`; $('conduitMinimum').textContent=minimum?`${family} ${minimum.nominal}`:'該当なし'; $('conduitRecommended').textContent=recommended?`${family} ${recommended.nominal}`:'該当なし'; $('conduitWireArea').textContent=`${formatNumber(wireArea,1)}mm²`; $('conduitPipeArea').textContent=displayPipe?`${formatNumber(displayPipe.pipeArea,1)}mm²`:'-';
+  $('conduitRecommendationReason').textContent=minimum?(reasons.length?`占有率基準を満たす最小配管 ${minimum.nominal} を推奨します。ただし、${reasons.join('、')}ため、施工性を考慮して1サイズ上も検討してください。外径・内径は参考値です。`:`占有率基準を満たす最小配管 ${minimum.nominal} を推奨します。外径・内径は参考値です。`):'選択した電線管種類の最大サイズでも設定占有率を満足しません。配管種類、分割配管または施工条件を見直してください。';
 }
 function initConduitCalculator(){
   if(!$('conduitCalculatorPanel'))return; conduitWireItems=[createConduitWireItem()]; renderConduitWireRows(); renderConduitOptions();
-  $('addConduitWireBtn').addEventListener('click',()=>{if(conduitWireItems.length>=10)return showToast('電線条件は10行までです。');conduitWireItems.push(createConduitWireItem());renderConduitWireRows();});
-  $('conduitFamily').addEventListener('change',()=>{renderConduitOptions();$('conduitResult').classList.add('hidden');});
-  $('conduitFillLimit').addEventListener('change',()=>{$('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];});
-  $('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value]; $('calculateConduitBtn').addEventListener('click',calculateConduitSizing);
+  $('addConduitWireBtn').addEventListener('click',()=>{if(conduitWireItems.length>=10)return showToast('電線条件は10行までです。');conduitWireItems.push(createConduitWireItem());renderConduitWireRows();calculateConduitSizing();});
+  $('conduitFamily').addEventListener('change',()=>{renderConduitOptions();calculateConduitSizing();});
+  $('conduitNominal').addEventListener('change',calculateConduitSizing);
+  $('conduitFillLimit').addEventListener('change',()=>{$('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];calculateConduitSizing();});
+  $('conduitLength').addEventListener('input',calculateConduitSizing);
+  $('conduitBendCount').addEventListener('input',calculateConduitSizing);
+  $('conduitFutureExpansion').addEventListener('change',calculateConduitSizing);
+  $('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];
   $('openConduitCalculator')?.addEventListener('click',()=>switchScreen('conduit'));
   $('returnCalcFromConduit')?.addEventListener('click',()=>switchScreen('calc'));
 }
