@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.3';
+const APP_VERSION = '3.3.4';
 
 const VERSIONS = {
-  app: 'Web v3.3.3',
+  app: 'Web v3.3.4',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
