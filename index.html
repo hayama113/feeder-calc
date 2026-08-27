@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260827_conduit_screen" />
+  <link rel="stylesheet" href="styles.css?v=20260827_conduit_protection" />
 </head>
 <body>
   <div id="app">
@@ -375,13 +375,16 @@
 
         <div class="panel" id="conduitCalculatorPanel">
           <div class="panel-title row">
-            <span>電線・電線管条件</span>
+            <span>配管選定条件</span>
             <button id="addConduitWireBtn" type="button" class="ghost small">電線を追加</button>
           </div>
           <p class="field-hint">外径・内径はメーカーを特定しない参考値です。採用品の仕様書と適用する内線規程を必ず確認してください。</p>
+          <div class="grid two top-gap">
+            <label><span>使用区分</span><select id="conduitUsage"><option value="wiring">電線管工事（絶縁電線）</option><option value="protection">ケーブル保護管</option></select><div id="conduitUsageHint" class="field-hint"></div></label>
+          </div>
           <div id="conduitWireRows" class="stack tight top-gap"></div>
           <div class="grid two top-gap">
-            <label><span>占有率上限</span><select id="conduitFillLimit"><option value="32">32%以下（標準）</option><option value="48">48%以下（条件付き）</option></select><div id="conduitFillLimitHint" class="field-hint"></div></label>
+            <label id="conduitFillLimitField"><span>占有率上限</span><select id="conduitFillLimit"><option value="32">32%以下（標準）</option><option value="48">48%以下（条件付き）</option></select><div id="conduitFillLimitHint" class="field-hint"></div></label>
             <label><span>電線管種類</span><select id="conduitFamily"></select></label>
             <label><span>判定する電線管（任意）</span><select id="conduitNominal"></select><div class="field-hint">選択すると、その配管のOK／NGも同時に判定します。</div></label>
             <label><span>配管長 [m]</span><input id="conduitLength" type="number" inputmode="decimal" min="0" step="0.1" placeholder="例：25" /></label>
@@ -392,7 +395,7 @@
             <div id="conduitSelectedJudgementWrap" class="judgement-wrap hidden"><span>選択配管の判定</span><strong id="conduitJudgement" class="judgement">-</strong></div>
             <div class="result-grid top-gap">
               <div class="result-card"><span id="conduitActualFillLabel">推奨配管の占有率</span><strong id="conduitActualFill">-</strong></div>
-              <div class="result-card"><span>設定上限</span><strong id="conduitLimitResult">-</strong></div>
+              <div class="result-card"><span id="conduitLimitResultLabel">設定上限</span><strong id="conduitLimitResult">-</strong></div>
               <div class="result-card"><span>最小配管</span><strong id="conduitMinimum">-</strong></div>
               <div class="result-card"><span>推奨配管</span><strong id="conduitRecommended">-</strong></div>
               <div class="result-card"><span>電線占有面積</span><strong id="conduitWireArea">-</strong></div>
@@ -533,6 +536,6 @@
 
   <div id="formulaPopup" class="formula-popup hidden" role="status"></div>
   <div id="toast"></div>
-  <script src="app.js?v=20260612_req032_optional_calc_ui"></script>
+  <script src="app.js?v=20260827_conduit_protection"></script>
 </body>
 </html>
