@@ -383,21 +383,20 @@
           <div class="grid two top-gap">
             <label><span>占有率上限</span><select id="conduitFillLimit"><option value="32">32%以下（標準）</option><option value="48">48%以下（条件付き）</option></select><div id="conduitFillLimitHint" class="field-hint"></div></label>
             <label><span>電線管種類</span><select id="conduitFamily"></select></label>
-            <label><span>判定する電線管</span><select id="conduitNominal"></select></label>
+            <label><span>判定する電線管（任意）</span><select id="conduitNominal"></select><div class="field-hint">選択すると、その配管のOK／NGも同時に判定します。</div></label>
             <label><span>配管長 [m]</span><input id="conduitLength" type="number" inputmode="decimal" min="0" step="0.1" placeholder="例：25" /></label>
             <label><span>曲がり箇所数</span><input id="conduitBendCount" type="number" inputmode="numeric" min="0" step="1" value="0" /></label>
             <label class="checkbox-label"><input id="conduitFutureExpansion" type="checkbox" /><span>将来増設を考慮する</span></label>
           </div>
-          <button id="calculateConduitBtn" type="button" class="primary full top-gap">電線管を自動計算</button>
           <div id="conduitResult" class="hidden top-gap">
-            <div class="judgement-wrap"><span>選択配管の判定</span><strong id="conduitJudgement" class="judgement">-</strong></div>
+            <div id="conduitSelectedJudgementWrap" class="judgement-wrap hidden"><span>選択配管の判定</span><strong id="conduitJudgement" class="judgement">-</strong></div>
             <div class="result-grid top-gap">
-              <div class="result-card"><span>実占有率</span><strong id="conduitActualFill">-</strong></div>
+              <div class="result-card"><span id="conduitActualFillLabel">推奨配管の占有率</span><strong id="conduitActualFill">-</strong></div>
               <div class="result-card"><span>設定上限</span><strong id="conduitLimitResult">-</strong></div>
               <div class="result-card"><span>最小配管</span><strong id="conduitMinimum">-</strong></div>
               <div class="result-card"><span>推奨配管</span><strong id="conduitRecommended">-</strong></div>
               <div class="result-card"><span>電線占有面積</span><strong id="conduitWireArea">-</strong></div>
-              <div class="result-card"><span>選択管内面積</span><strong id="conduitPipeArea">-</strong></div>
+              <div class="result-card"><span id="conduitPipeAreaLabel">推奨管内面積</span><strong id="conduitPipeArea">-</strong></div>
             </div>
             <div id="conduitRecommendationReason" class="result-notice top-gap"></div>
           </div>
@@ -467,7 +466,7 @@
           <div class="panel-title">設定</div>
           <div class="stack tight">
             <div class="readonly-row"><span>現在のモード</span><strong>Webアプリ版</strong></div>
-            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.3.2</strong></div>
+            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.3.3</strong></div>
             <div class="readonly-row"><span>許容電流データ版</span><strong id="verAmpacity">2026.04-A</strong></div>
             <div class="readonly-row"><span>外径・質量データ版</span><strong id="verPhysical">2026.04-D</strong></div>
             <div class="readonly-row"><span>帳票様式版</span><strong id="verForm">2026.04-C</strong></div>
