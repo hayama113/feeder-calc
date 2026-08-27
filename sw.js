@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-entry';
+const CACHE_NAME = 'feeder-calc-v3-20260827-conduit-screen';
 const ASSETS = [
   './',
   './index.html',
