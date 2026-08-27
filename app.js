@@ -308,9 +308,9 @@ const SINGLE_WIRE_REFERENCE_DATA = {
 // ケーブル保護管選定専用データ。VVFのサイズは導体径、外径は長径側の参考値。
 const PROTECTIVE_CABLE_REFERENCE_DATA = {
   'CV': CABLE_DATA['CV-1C'],
-  'CV-2C': CABLE_DATA['CV-2C'],
-  'CV-3C': CABLE_DATA['CV-3C'],
-  'CV-4C': CABLE_DATA['CV-4C'],
+  'CV-2C': {3.5:{outerDiameter:12.5},5.5:{outerDiameter:14.0},...CABLE_DATA['CV-2C']},
+  'CV-3C': {3.5:{outerDiameter:13.5},5.5:{outerDiameter:15.5},...CABLE_DATA['CV-3C']},
+  'CV-4C': {3.5:{outerDiameter:15.0},5.5:{outerDiameter:17.0},...CABLE_DATA['CV-4C']},
   'CVD': CABLE_DATA.CVD,
   'CVT': CABLE_DATA.CVT,
   'CVQ': CABLE_DATA.CVQ,
