@@ -72,6 +72,8 @@ button.full,.full{width:100%;}
 .unified-calc-title + .full{margin-top:10px;}
 .menu-entry{margin:8px 0;}
 #conduitCalculatorPanel{scroll-margin-top:14px;}
+.conduit-usage-box{padding:14px;border:2px solid var(--accent-2);border-radius:14px;background:var(--surface-2);}
+.conduit-usage-box label>span{color:var(--accent);font-weight:800;font-size:var(--fs-lg);}
 .seg,.saved-seg,.nav-btn{background:#eff6ff;border:1px solid #bfdbfe;color:var(--accent);font-weight:700;border-radius:var(--radius-sm);padding:12px 14px;}
 .seg.active,.saved-seg.active,.nav-btn.active{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;border-color:transparent;}
 .field-hint{color:var(--muted);line-height:1.55;}
