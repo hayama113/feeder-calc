@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.9';
+const APP_VERSION = '3.3.10';
 
 const VERSIONS = {
-  app: 'Web v3.3.9',
+  app: 'Web v3.3.10',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -517,6 +517,22 @@ function showToast(msg){
 }
 
 function conduitUsage(){ return $('conduitUsage')?.value || 'wiring'; }
+function conduitUsageBasisText(){
+  const usage=conduitUsage();
+  if(usage==='wiring')return `現在の判定：電線管工事（占有率${Number($('conduitFillLimit')?.value||32)}%以下）`;
+  const cableCount=conduitWireItems.reduce((sum,item)=>sum+Math.max(0,Number(item.count)||0),0);
+  return cableCount>=2?'現在の判定：ケーブル保護管（複数条・本アプリ参考基準：占有率32%以下）':'現在の判定：ケーブル保護管（1条・内線規程3165-1：仕上外径×1.5以上）';
+}
+function updateConduitUsageDisplay(){
+  const usage=conduitUsage();
+  document.querySelectorAll('[data-conduit-usage]').forEach(button=>{
+    const active=button.dataset.conduitUsage===usage;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+  if($('conduitUsageCurrent'))$('conduitUsageCurrent').textContent=conduitUsageBasisText();
+  if($('conduitUsageHint'))$('conduitUsageHint').textContent=CONDUIT_USAGE_HINTS[usage];
+}
 function conduitWireTypes(){ return Object.keys(conduitUsage()==='protection'?PROTECTIVE_CABLE_REFERENCE_DATA:SINGLE_WIRE_REFERENCE_DATA); }
 function conduitWireSizes(type){ const data=conduitUsage()==='protection'?PROTECTIVE_CABLE_REFERENCE_DATA[type]:SINGLE_WIRE_REFERENCE_DATA[type]; return Object.keys(data||{}).map(Number).sort((a,b)=>a-b); }
 function conduitWireRecord(type,size){ return conduitUsage()==='protection'?PROTECTIVE_CABLE_REFERENCE_DATA[type]?.[size]:null; }
@@ -545,6 +561,7 @@ function renderConduitOptions(){
 function conduitAreaFromDiameter(diameter){return Math.PI*Math.pow(Number(diameter||0),2)/4;}
 function calculateConduitSizing(){
   const usage=conduitUsage(),family=$('conduitFamily')?.value,limit=Number($('conduitFillLimit')?.value||32),conduits=allConduitFamilies()[family]||[];
+  updateConduitUsageDisplay();
   const invalidItem=conduitWireItems.find(item=>!conduitWireDiameter(item.type,Number(item.size))||Number(item.count)<1);
   if(!family||invalidItem){$('conduitResult')?.classList.add('hidden');return;}
   const wireArea=conduitWireItems.reduce((sum,item)=>sum+conduitAreaFromDiameter(conduitWireDiameter(item.type,Number(item.size)))*Number(item.count),0);
@@ -587,7 +604,7 @@ function calculateConduitSizing(){
 }
 function updateConduitUsage(){
   const usage=conduitUsage();
-  $('conduitUsageHint').textContent=CONDUIT_USAGE_HINTS[usage];
+  updateConduitUsageDisplay();
   $('conduitFillLimitField').classList.toggle('hidden',usage==='protection');
   $('addConduitWireBtn').textContent=usage==='protection'?'ケーブルを追加':'電線を追加';
   conduitWireItems=[createConduitWireItem()]; renderConduitWireRows(); calculateConduitSizing();
@@ -597,12 +614,18 @@ function initConduitCalculator(){
   $('addConduitWireBtn').addEventListener('click',()=>{if(conduitWireItems.length>=10)return showToast('電線条件は10行までです。');conduitWireItems.push(createConduitWireItem());renderConduitWireRows();calculateConduitSizing();});
   $('conduitFamily').addEventListener('change',()=>{renderConduitOptions();calculateConduitSizing();});
   $('conduitUsage').addEventListener('change',updateConduitUsage);
+  document.querySelectorAll('[data-conduit-usage]').forEach(button=>button.addEventListener('click',()=>{
+    const nextUsage=button.dataset.conduitUsage;
+    if(!nextUsage||nextUsage===conduitUsage())return;
+    $('conduitUsage').value=nextUsage;
+    updateConduitUsage();
+  }));
   $('conduitFillLimit').addEventListener('change',()=>{$('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];calculateConduitSizing();});
   $('conduitLength').addEventListener('input',calculateConduitSizing);
   $('conduitBendCount').addEventListener('input',calculateConduitSizing);
   $('conduitFutureExpansion').addEventListener('change',calculateConduitSizing);
   $('conduitFillLimitHint').textContent=CONDUIT_FILL_LIMITS[$('conduitFillLimit').value];
-  $('conduitUsageHint').textContent=CONDUIT_USAGE_HINTS[conduitUsage()];
+  updateConduitUsageDisplay();
   $('openConduitCalculator')?.addEventListener('click',()=>switchScreen('conduit'));
   $('returnCalcFromConduit')?.addEventListener('click',()=>switchScreen('calc'));
 }
