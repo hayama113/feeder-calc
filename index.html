@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260828_conduit_usage_buttons" />
+  <link rel="stylesheet" href="styles.css?v=20260828_rack_auto_sizing" />
 </head>
 <body>
   <div id="app">
@@ -29,6 +29,7 @@
           <div class="unified-calc-title">低圧幹線計算</div>
           <button id="openCalcToolsFromCalc" class="ghost full secondary-entry">任意計算</button>
           <button id="openConduitCalculator" class="ghost full menu-entry">電線管自動選定</button>
+          <button id="openRackCalculator" class="ghost full menu-entry">ケーブルラック自動選定</button>
           <button id="openDocsFromCalc" class="ghost full">技術資料</button>
         </div>
 
@@ -413,6 +414,55 @@
         </div>
       </section>
 
+      <section id="screen-rack" class="screen">
+        <div class="panel compact">
+          <div class="panel-title row">
+            <span>ケーブルラック自動選定</span>
+            <button id="returnCalcFromRack" type="button" class="ghost small">低圧幹線計算へ戻る</button>
+          </div>
+          <p class="field-hint">低圧幹線計算・電線管自動選定とは独立した画面です。ケーブルを一段に並べる前提で、必要幅と水平部の許容静荷重からSR・QRを選定します。</p>
+        </div>
+
+        <div class="panel" id="rackCalculatorPanel">
+          <div class="panel-title row">
+            <span>ラック選定条件</span>
+            <button id="addRackCableBtn" type="button" class="ghost small">ケーブルを追加</button>
+          </div>
+          <p class="field-hint">SR・QRの寸法、単品質量、許容静荷重はネグロス電工「電設資材カタログ2026/27A」の参考値です。採用品の最新資料、設計図書、支持金具・母材強度を必ず確認してください。</p>
+          <div id="rackCableRows" class="stack tight top-gap"></div>
+          <div class="grid two top-gap">
+            <label><span>施工方向</span><select id="rackDirection"><option value="horizontal">水平</option><option value="vertical">垂直</option><option value="eps">EPS立上り</option></select></label>
+            <label><span>仕上げ</span><select id="rackFinish"><option value="P">標準塗装（P）</option><option value="Z">高耐食性めっき（Z）</option><option value="SD">溶融亜鉛めっき（SD）</option><option value="S">ステンレス（S）</option></select></label>
+            <label><span>ラック延長 [m]</span><input id="rackLength" type="number" inputmode="decimal" min="0" step="0.1" value="10" /></label>
+            <label><span>支持間隔 [m]</span><input id="rackSupportInterval" type="number" inputmode="decimal" min="0.1" max="6" step="0.1" value="2" /><div class="field-hint">水平2.0m以下、垂直3.0m以下。EPSの各階支持は6.0m以下の条件を確認します。水平許容荷重は安全側に2.0m支点間の値で判定します。</div></label>
+            <label><span>将来増設余裕 [%]</span><input id="rackFutureReserve" type="number" inputmode="decimal" min="0" max="80" step="5" value="20" /></label>
+            <label><span>許容荷重の使用上限</span><select id="rackLoadLimit"><option value="80">80%以下（標準）</option><option value="100">100%以下（条件付き）</option></select></label>
+            <label class="checkbox-label"><input id="rackSeparator" type="checkbox" /><span>強電・弱電間にセパレータを設ける</span></label>
+            <label><span>セパレータ・離隔幅 [mm]</span><input id="rackSeparatorWidth" type="number" inputmode="decimal" min="0" step="10" value="50" /></label>
+            <label class="checkbox-label"><input id="rackCover" type="checkbox" /><span>カバーを設ける</span></label>
+            <label><span>カバー質量 [kg/m]</span><input id="rackCoverMass" type="number" inputmode="decimal" min="0" step="0.01" value="0" /><div class="field-hint">カバー使用時は採用品の質量を入力してください。</div></label>
+          </div>
+          <div id="rackResult" class="hidden top-gap">
+            <div id="rackResultError" class="result-error hidden"></div>
+            <div class="result-grid top-gap">
+              <div class="result-card"><span>推奨ラック</span><strong id="rackRecommended">-</strong></div>
+              <div class="result-card"><span>必要有効幅</span><strong id="rackRequiredWidth">-</strong></div>
+              <div class="result-card"><span>幅の余裕</span><strong id="rackWidthMargin">-</strong></div>
+              <div class="result-card"><span>ケーブル質量</span><strong id="rackCableMass">-</strong></div>
+              <div class="result-card"><span>ラック質量</span><strong id="rackSelfMass">-</strong></div>
+              <div class="result-card"><span>設計質量</span><strong id="rackDesignMass">-</strong></div>
+              <div class="result-card"><span>許容静荷重</span><strong id="rackAllowableLoad">-</strong></div>
+              <div class="result-card"><span>荷重使用率</span><strong id="rackLoadUtilization">-</strong></div>
+              <div class="result-card"><span>1支持点あたり概算荷重</span><strong id="rackSupportLoad">-</strong></div>
+              <div class="result-card"><span>支持点数</span><strong id="rackSupportCount">-</strong></div>
+              <div class="result-card"><span>吊りボルト呼び径</span><strong id="rackBoltSize">-</strong></div>
+              <div class="result-card"><span>全延長の施工質量</span><strong id="rackTotalMass">-</strong></div>
+            </div>
+            <div id="rackRecommendationReason" class="result-notice top-gap"></div>
+          </div>
+        </div>
+      </section>
+
       <section id="screen-docs" class="screen">
         <div class="panel compact">
           <div class="panel-title row">
@@ -476,7 +526,7 @@
           <div class="panel-title">設定</div>
           <div class="stack tight">
             <div class="readonly-row"><span>現在のモード</span><strong>Webアプリ版</strong></div>
-            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.3.10</strong></div>
+            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.4.0</strong></div>
             <div class="readonly-row"><span>許容電流データ版</span><strong id="verAmpacity">2026.04-A</strong></div>
             <div class="readonly-row"><span>外径・質量データ版</span><strong id="verPhysical">2026.04-D</strong></div>
             <div class="readonly-row"><span>帳票様式版</span><strong id="verForm">2026.04-C</strong></div>
@@ -543,6 +593,6 @@
 
   <div id="formulaPopup" class="formula-popup hidden" role="status"></div>
   <div id="toast"></div>
-  <script src="app.js?v=20260828_conduit_usage_buttons"></script>
+  <script src="app.js?v=20260828_rack_auto_sizing"></script>
 </body>
 </html>
