@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260828-conduit-code-basis';
+const CACHE_NAME = 'feeder-calc-v3-20260828-conduit-usage-buttons';
 const ASSETS = [
   './',
   './index.html',

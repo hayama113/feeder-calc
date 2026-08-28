@@ -73,7 +73,14 @@ button.full,.full{width:100%;}
 .menu-entry{margin:8px 0;}
 #conduitCalculatorPanel{scroll-margin-top:14px;}
 .conduit-usage-box{padding:14px;border:2px solid var(--accent-2);border-radius:14px;background:var(--surface-2);}
-.conduit-usage-box label>span{color:var(--accent);font-weight:800;font-size:var(--fs-lg);}
+.conduit-usage-title{color:var(--accent);font-weight:800;font-size:var(--fs-lg);margin-bottom:10px;}
+.conduit-usage-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.conduit-usage-option{min-height:72px;padding:11px 8px;border:2px solid #bfdbfe;border-radius:12px;background:#fff;color:var(--accent);display:grid;align-content:center;gap:4px;text-align:center;}
+.conduit-usage-option strong{font-size:var(--fs-base);}
+.conduit-usage-option span{font-size:var(--fs-mini);font-weight:600;}
+.conduit-usage-option.active{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;box-shadow:0 4px 12px rgba(29,78,216,.2);}
+.conduit-current-basis{margin-top:12px;padding:10px 12px;border-radius:10px;background:#dbeafe;color:#1e3a8a;font-weight:800;line-height:1.5;}
+.conduit-usage-box .field-hint{margin-top:8px;}
 .seg,.saved-seg,.nav-btn{background:#eff6ff;border:1px solid #bfdbfe;color:var(--accent);font-weight:700;border-radius:var(--radius-sm);padding:12px 14px;}
 .seg.active,.saved-seg.active,.nav-btn.active{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;border-color:transparent;}
 .field-hint{color:var(--muted);line-height:1.55;}
