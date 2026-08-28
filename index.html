@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260828_conduit_code_basis" />
+  <link rel="stylesheet" href="styles.css?v=20260828_conduit_usage_buttons" />
 </head>
 <body>
   <div id="app">
@@ -380,7 +380,14 @@
           </div>
           <p class="field-hint">外径・内径はメーカーを特定しない参考値です。採用品の仕様書と適用する内線規程を必ず確認してください。</p>
           <div class="conduit-usage-box top-gap">
-            <label><span>使用区分</span><select id="conduitUsage"><option value="wiring">電線管工事（絶縁電線）</option><option value="protection">ケーブル保護管</option></select><div id="conduitUsageHint" class="field-hint"></div></label>
+            <div class="conduit-usage-title">使用区分</div>
+            <div class="conduit-usage-buttons" role="group" aria-label="配管の使用区分">
+              <button id="conduitUsageWiring" type="button" class="conduit-usage-option" data-conduit-usage="wiring" aria-pressed="true"><strong>電線管工事</strong><span>IV・EM-IE/F</span></button>
+              <button id="conduitUsageProtection" type="button" class="conduit-usage-option" data-conduit-usage="protection" aria-pressed="false"><strong>ケーブル保護管</strong><span>CV・VVF・制御線等</span></button>
+            </div>
+            <select id="conduitUsage" class="hidden" aria-hidden="true" tabindex="-1"><option value="wiring">電線管工事（絶縁電線）</option><option value="protection">ケーブル保護管</option></select>
+            <div id="conduitUsageCurrent" class="conduit-current-basis" aria-live="polite"></div>
+            <div id="conduitUsageHint" class="field-hint"></div>
           </div>
           <div id="conduitWireRows" class="stack tight top-gap"></div>
           <div class="grid two top-gap">
@@ -469,7 +476,7 @@
           <div class="panel-title">設定</div>
           <div class="stack tight">
             <div class="readonly-row"><span>現在のモード</span><strong>Webアプリ版</strong></div>
-            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.3.9</strong></div>
+            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.3.10</strong></div>
             <div class="readonly-row"><span>許容電流データ版</span><strong id="verAmpacity">2026.04-A</strong></div>
             <div class="readonly-row"><span>外径・質量データ版</span><strong id="verPhysical">2026.04-D</strong></div>
             <div class="readonly-row"><span>帳票様式版</span><strong id="verForm">2026.04-C</strong></div>
@@ -536,6 +543,6 @@
 
   <div id="formulaPopup" class="formula-popup hidden" role="status"></div>
   <div id="toast"></div>
-  <script src="app.js?v=20260828_conduit_code_basis"></script>
+  <script src="app.js?v=20260828_conduit_usage_buttons"></script>
 </body>
 </html>
