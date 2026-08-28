@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.8';
+const APP_VERSION = '3.3.9';
 
 const VERSIONS = {
-  app: 'Web v3.3.8',
+  app: 'Web v3.3.9',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -352,7 +352,7 @@ const CONDUIT_FILL_LIMITS = {
 };
 const CONDUIT_USAGE_HINTS = {
   wiring:'IV・EM-IE/Fを電線管に収める場合。占有率32%または条件付き48%で判定します。',
-  protection:'CV・VVF・制御線・弱電線等のケーブル保護管。1条は有効内径を仕上外径の1.5倍以上、2条以上は実占有率32%以下で判定します。'
+  protection:'CV・VVF・制御線・弱電線等のケーブル保護管。1条は内線規程 JEAC 8001-2022 3165-1①［注1］に基づき、有効内径を仕上外径の1.5倍以上で判定します。2条以上の32%以下は、本アプリの安全側参考基準です。'
 };
 let conduitWireItems = [];
 
@@ -367,6 +367,7 @@ const DOC_GROUPS = [
   ]},
   {key:'standards', title:'規程・法令基準', items:[
     {id:'standard_scope', title:'技術資料の位置づけ', searchable:true, build:buildStandardsScopeDoc},
+    {id:'cable_protection_code', title:'ケーブル防護管の1.5倍基準（内線規程3165-1）', searchable:true, build:buildCableProtectionCodeDoc},
     {id:'voltage_drop_code', title:'規程上の電圧降下目安（内線規程1310節参考）', searchable:true, build:buildVoltageDropCodeDoc},
     {id:'insulation_low_voltage', title:'低圧電路の絶縁抵抗値', searchable:true, build:buildInsulationResistanceDoc},
     {id:'ground_resistance_code', title:'接地抵抗値（A/B/C/D種）', searchable:true, build:buildGroundResistanceCodeDoc},
@@ -562,7 +563,7 @@ function calculateConduitSizing(){
   $('conduitActualFillLabel').textContent=usage==='protection'?'推奨配管の実占有率':'推奨配管の占有率';
   $('conduitPipeAreaLabel').textContent='推奨管内面積';
   $('conduitLimitResultLabel').textContent=usage==='protection'?'適用した判定基準':'設定上限';
-  const criterion=usage==='protection'?(multipleCables?`ケーブル${cableCount}条：実占有率${protectionFillLimit}%以下`:'ケーブル1条：仕上外径×1.5以上'):`占有率${limit}%基準`;
+  const criterion=usage==='protection'?(multipleCables?`本アプリ参考基準（ケーブル${cableCount}条）：実占有率${protectionFillLimit}%以下`:'内線規程 JEAC 8001-2022 3165-1①［注1］：仕上外径×1.5以上'):`占有率${limit}%基準`;
   const requiredLabel=usage==='protection'?(multipleCables?'必要管内面積':'必要有効内径'):'必要管内面積';
   const requiredValue=usage==='protection'?(multipleCables?`${formatNumber(requiredPipeArea,1)}mm²以上`:`${formatNumber(requiredInnerDiameter,1)}mm以上`):`${formatNumber(wireArea/(limit/100),1)}mm²以上`;
   const areaBased=usage==='wiring'||multipleCables;
@@ -581,7 +582,7 @@ function calculateConduitSizing(){
   if($('conduitPipeInnerDiameter'))$('conduitPipeInnerDiameter').textContent=displayPipe?`${formatNumber(displayPipe.innerDiameter,1)}mm`:'-';
   if($('conduitMarginLabel'))$('conduitMarginLabel').textContent=areaBased?`${areaMarginLimit}%上限までの面積裕度`:'必要内径に対する裕度';
   if($('conduitMargin'))$('conduitMargin').textContent=displayPipe?(areaBased?`${formatNumber(marginArea,1)}mm² / ${formatNumber(marginRate,1)}%`:`${formatNumber(diameterMargin,1)}mm / ${formatNumber(diameterMarginRate,1)}%`):'-';
-  const multiCableNote=multipleCables?' 複数条は管内面積に対する実占有率32%以下で判定しています。実際の配列・曲げ・通線条件を確認してください。':'';
+  const multiCableNote=multipleCables?' 複数条の32%基準は内線規程3165-1に明記された数値ではなく、本アプリの安全側参考基準です。実際の配列・曲げ・通線条件を確認してください。':'';
   $('conduitRecommendationReason').textContent=recommended?(reasons.length?`${criterion}を満たす配管 ${recommended.nominal} を推奨します。ただし、${reasons.join('、')}ため、施工性を考慮して1サイズ上も検討してください。${multiCableNote} 外径・内径は参考値です。`:`${criterion}を満たす配管 ${recommended.nominal} を推奨します。${multiCableNote} 外径・内径は参考値です。`):`選択した配管種類の最大サイズでも${criterion}を満足しません。配管種類、分割配管または施工条件を見直してください。`;
 }
 function updateConduitUsage(){
@@ -1483,6 +1484,7 @@ function buildCableTable(type,label){
 }
 function textDoc(note, lines){ return {note, headers:['項目','内容'], keys:['title','body'], rows:lines.map(v=>({title:v[0],body:v[1]}))}; }
 function buildStandardsScopeDoc(){ return textDoc('公開法令・電技解釈で確認できる最低基準と、内線規程で確認すべき代表項目を整理しています。数値は参考表示であり、最新版の規程・設計仕様・保安規程・現場条件を優先してください。', [['アプリで反映した範囲','低圧電圧降下、低圧絶縁抵抗、A/B/C/D種接地抵抗、機械器具外箱の接地種別、地絡遮断装置の確認項目'],['内線規程の扱い','内線規程は民間規格です。技術資料には現場確認用の代表値・確認欄を表示し、詳細な適用条件は原本で確認する前提です'],['法令との関係','電気設備技術基準・電技解釈の最低基準を下回らないことを前提に、内線規程・設計仕様・機器仕様・保護協調を確認してください'],['注意','本アプリは参考計算です。施工可否や届出要否を確定するものではありません']]); }
+function buildCableProtectionCodeDoc(){ return textDoc('ケーブル防護管の1条選定に用いる「仕上外径×1.5」の根拠と適用上の注意です。内線規程は民間自主規格であり、最終判断は最新版原本・設計仕様・採用品仕様書で確認してください。', [['根拠規程','内線規程 JEAC 8001-2022 3165-1（施設方法）①［注1］'],['原則','防護管の内径は、ケーブルの仕上り外径の1.5倍以上とします。'],['例外','防護管が短小で屈曲がなく、ケーブルの引替えが容易な場合は、1.5倍未満の防護管を使用できる扱いがあります。本アプリの自動選定にはこの例外を適用しません。'],['複数条の扱い','3165-1①［注1］には、複数条に対する占積率32%という数値は明記されていません。本アプリでは、安全側の参考設計条件としてケーブル断面積合計の実占有率32%以下で選定します。'],['適用上の注意','曲げ、長さ、ケーブル配列、通線張力、引替え条件、メーカー施工要領を別途確認してください。']]); }
 function buildVoltageDropCodeDoc(){ return {note:'内線規程1310節の低圧配線電圧降下許容値として一般に参照される区分です。アプリの計算判定は入力条件の「電圧降下判定基準」で5.0%又は3.0%を選択できます。供給方式・こう長に応じた最終判断は本表と設計仕様で確認してください。', headers:['こう長','電気使用場所内変圧器から供給','電気事業者から低圧供給','確認メモ'], keys:['length','privateTransformer','utilityLowVoltage','note'], rows:[{length:'60m以下',privateTransformer:'幹線3%以下 / 分岐2%以下',utilityLowVoltage:'幹線2%以下 / 分岐2%以下',note:'幹線・分岐を個別に確認。'},{length:'60m超過〜120m以下',privateTransformer:'合計5%以下',utilityLowVoltage:'合計4%以下',note:'幹線＋分岐の合計で確認。'},{length:'120m超過〜200m以下',privateTransformer:'合計6%以下',utilityLowVoltage:'合計5%以下',note:'長距離幹線では始動時電圧降下も別途確認。'},{length:'200m超過',privateTransformer:'合計7%以下',utilityLowVoltage:'合計6%以下',note:'詳細計算・設備仕様・電力会社協議を優先。'}]}; }
 function buildInsulationResistanceDoc(){ return {note:'低圧電路の絶縁抵抗値の最低基準です。開閉器又は過電流遮断器で区切ることのできる電路ごとに確認します', headers:['電路の使用電圧区分','条件・確認方法','判定値','備考'], keys:['voltage','condition','resistance','note'], rows:[{voltage:'300V以下',condition:'対地電圧150V以下',resistance:'0.1MΩ以上',note:'100V回路等'},{voltage:'300V以下',condition:'上記以外',resistance:'0.2MΩ以上',note:'三相200V回路等'},{voltage:'300V超過',condition:'低圧範囲',resistance:'0.4MΩ以上',note:'三相400V回路等'},{voltage:'充電回路',condition:'停電・開放不可など　クランプメーター等で漏えい電流を測定',resistance:'1mA以下',note:'電技解釈上の代替確認　現場手順・停電可否を確認'}]}; }
 function buildGroundResistanceCodeDoc(){ return {note:'A/B/C/D種接地工事の接地抵抗値の代表基準です。B種は地絡電流Ig及び遮断時間条件で算定します', headers:['接地種別','接地抵抗値','主な用途','注意'], keys:['type','resistance','use','note'], rows:[{type:'A種',resistance:'10Ω以下',use:'高圧・特別高圧機器外箱等',note:'避雷器等では個別条件も確認'},{type:'B種',resistance:'150/Ig 以下（条件により300/Ig又は600/Ig）',use:'変圧器二次側中性点等の系統接地',note:'機械器具外箱の保護接地とは用途が異なる'},{type:'C種',resistance:'10Ω以下',use:'300V超過の低圧機器外箱等',note:'0.5秒以内に自動遮断する装置を施設する場合は500Ω以下'},{type:'D種',resistance:'100Ω以下',use:'300V以下の低圧機器外箱等',note:'0.5秒以内に自動遮断する装置を施設する場合は500Ω以下'}]}; }
