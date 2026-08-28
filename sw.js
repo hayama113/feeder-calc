@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260828-cable-series-audit';
+const CACHE_NAME = 'feeder-calc-v3-20260828-conduit-margin-basis';
 const ASSETS = [
   './',
   './index.html',

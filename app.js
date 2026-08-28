@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.7';
+const APP_VERSION = '3.3.8';
 
 const VERSIONS = {
-  app: 'Web v3.3.7',
+  app: 'Web v3.3.8',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -352,7 +352,7 @@ const CONDUIT_FILL_LIMITS = {
 };
 const CONDUIT_USAGE_HINTS = {
   wiring:'IV・EM-IE/Fを電線管に収める場合。占有率32%または条件付き48%で判定します。',
-  protection:'CV・VVF・制御線・弱電線等のケーブル保護管。管の有効内径をケーブル仕上外径（複数本は参考束径）の1.5倍以上として判定します。'
+  protection:'CV・VVF・制御線・弱電線等のケーブル保護管。1条は有効内径を仕上外径の1.5倍以上、2条以上は実占有率32%以下で判定します。'
 };
 let conduitWireItems = [];
 
@@ -548,21 +548,40 @@ function calculateConduitSizing(){
   if(!family||invalidItem){$('conduitResult')?.classList.add('hidden');return;}
   const wireArea=conduitWireItems.reduce((sum,item)=>sum+conduitAreaFromDiameter(conduitWireDiameter(item.type,Number(item.size)))*Number(item.count),0);
   const cableCount=conduitWireItems.reduce((sum,item)=>sum+Number(item.count),0);
-  // 複数ケーブルは横並び時の外接径（各仕上外径の合計）を安全側の参考束径とする。
-  const bundleDiameter=conduitWireItems.reduce((sum,item)=>sum+conduitWireDiameter(item.type,Number(item.size))*Number(item.count),0);
-  const requiredInnerDiameter=usage==='protection'?bundleDiameter*1.5:0;
-  const evaluated=conduits.map(pipe=>{const pipeArea=conduitAreaFromDiameter(pipe.innerDiameter),fill=pipeArea?wireArea/pipeArea*100:Infinity;return{...pipe,pipeArea,fill,ok:usage==='protection'?pipe.innerDiameter>=requiredInnerDiameter:fill<=limit};});
+  const multipleCables=usage==='protection'&&cableCount>=2;
+  const singleCableDiameter=usage==='protection'&&!multipleCables?conduitWireDiameter(conduitWireItems[0].type,Number(conduitWireItems[0].size)):0;
+  const requiredInnerDiameter=usage==='protection'&&!multipleCables?singleCableDiameter*1.5:0;
+  const protectionFillLimit=32;
+  const requiredPipeArea=multipleCables?wireArea/(protectionFillLimit/100):0;
+  const evaluated=conduits.map(pipe=>{const pipeArea=conduitAreaFromDiameter(pipe.innerDiameter),fill=pipeArea?wireArea/pipeArea*100:Infinity;return{...pipe,pipeArea,fill,ok:usage==='protection'?(multipleCables?fill<=protectionFillLimit:pipe.innerDiameter>=requiredInnerDiameter):fill<=limit};});
   const recommendIndex=evaluated.findIndex(v=>v.ok),recommended=recommendIndex>=0?evaluated[recommendIndex]:null;
   const length=Number($('conduitLength')?.value||0),bends=Number($('conduitBendCount')?.value||0),mixed=new Set(conduitWireItems.map(v=>v.type)).size>1,reasons=[];
   if(length>30)reasons.push('配管長が30mを超える'); if(bends>=2)reasons.push('曲がりが2箇所以上'); if(mixed)reasons.push('複数線種を混在'); if(usage==='wiring'&&limit===48)reasons.push('48%の条件付き基準を使用'); if($('conduitFutureExpansion')?.checked)reasons.push('将来増設を考慮');
   $('conduitResult').classList.remove('hidden');
   const displayPipe=recommended;
-  $('conduitActualFillLabel').textContent=usage==='protection'?'推奨配管の参考占有率':'推奨配管の占有率';
+  $('conduitActualFillLabel').textContent=usage==='protection'?'推奨配管の実占有率':'推奨配管の占有率';
   $('conduitPipeAreaLabel').textContent='推奨管内面積';
-  $('conduitLimitResultLabel').textContent=usage==='protection'?'必要有効内径':'設定上限';
-  $('conduitActualFill').textContent=displayPipe?`${formatNumber(displayPipe.fill,1)}%`:'-'; $('conduitLimitResult').textContent=usage==='protection'?`${formatNumber(requiredInnerDiameter,1)}mm以上`:`${limit}%以下`; $('conduitRecommended').textContent=recommended?`${family} ${recommended.nominal}`:'該当なし'; $('conduitWireArea').textContent=`${formatNumber(wireArea,1)}mm²`; $('conduitPipeArea').textContent=displayPipe?`${formatNumber(displayPipe.pipeArea,1)}mm²`:'-';
-  const criterion=usage==='protection'?`1.5倍基準（参考束径 ${formatNumber(bundleDiameter,1)}mm）`:`占有率${limit}%基準`;
-  const multiCableNote=usage==='protection'&&cableCount>1?' 複数本は各ケーブルを横並びにした外径合計を参考束径とする安全側の概算です。実際の配列・曲げ・通線条件を確認してください。':'';
+  $('conduitLimitResultLabel').textContent=usage==='protection'?'適用した判定基準':'設定上限';
+  const criterion=usage==='protection'?(multipleCables?`ケーブル${cableCount}条：実占有率${protectionFillLimit}%以下`:'ケーブル1条：仕上外径×1.5以上'):`占有率${limit}%基準`;
+  const requiredLabel=usage==='protection'?(multipleCables?'必要管内面積':'必要有効内径'):'必要管内面積';
+  const requiredValue=usage==='protection'?(multipleCables?`${formatNumber(requiredPipeArea,1)}mm²以上`:`${formatNumber(requiredInnerDiameter,1)}mm以上`):`${formatNumber(wireArea/(limit/100),1)}mm²以上`;
+  const areaBased=usage==='wiring'||multipleCables;
+  const areaMarginLimit=usage==='wiring'?limit:protectionFillLimit;
+  const marginArea=displayPipe&&areaBased?displayPipe.pipeArea*(areaMarginLimit/100)-wireArea:0;
+  const marginRate=displayPipe&&areaBased&&displayPipe.pipeArea?marginArea/(displayPipe.pipeArea*(areaMarginLimit/100))*100:0;
+  const diameterMargin=displayPipe&&usage==='protection'&&!multipleCables?displayPipe.innerDiameter-requiredInnerDiameter:0;
+  const diameterMarginRate=requiredInnerDiameter?diameterMargin/requiredInnerDiameter*100:0;
+  $('conduitActualFill').textContent=displayPipe?`${formatNumber(displayPipe.fill,1)}%`:'-';
+  $('conduitLimitResult').textContent=usage==='protection'?criterion:`${limit}%以下`;
+  $('conduitRecommended').textContent=recommended?`${family} ${recommended.nominal}`:'該当なし';
+  $('conduitWireArea').textContent=`${formatNumber(wireArea,1)}mm²`;
+  $('conduitPipeArea').textContent=displayPipe?`${formatNumber(displayPipe.pipeArea,1)}mm²`:'-';
+  if($('conduitRequiredLabel'))$('conduitRequiredLabel').textContent=requiredLabel;
+  if($('conduitRequired'))$('conduitRequired').textContent=requiredValue;
+  if($('conduitPipeInnerDiameter'))$('conduitPipeInnerDiameter').textContent=displayPipe?`${formatNumber(displayPipe.innerDiameter,1)}mm`:'-';
+  if($('conduitMarginLabel'))$('conduitMarginLabel').textContent=areaBased?`${areaMarginLimit}%上限までの面積裕度`:'必要内径に対する裕度';
+  if($('conduitMargin'))$('conduitMargin').textContent=displayPipe?(areaBased?`${formatNumber(marginArea,1)}mm² / ${formatNumber(marginRate,1)}%`:`${formatNumber(diameterMargin,1)}mm / ${formatNumber(diameterMarginRate,1)}%`):'-';
+  const multiCableNote=multipleCables?' 複数条は管内面積に対する実占有率32%以下で判定しています。実際の配列・曲げ・通線条件を確認してください。':'';
   $('conduitRecommendationReason').textContent=recommended?(reasons.length?`${criterion}を満たす配管 ${recommended.nominal} を推奨します。ただし、${reasons.join('、')}ため、施工性を考慮して1サイズ上も検討してください。${multiCableNote} 外径・内径は参考値です。`:`${criterion}を満たす配管 ${recommended.nominal} を推奨します。${multiCableNote} 外径・内径は参考値です。`):`選択した配管種類の最大サイズでも${criterion}を満足しません。配管種類、分割配管または施工条件を見直してください。`;
 }
 function updateConduitUsage(){
@@ -1486,6 +1505,7 @@ function compactConduitColumns(rows){
     {key:'nominal', header:'呼び', required:true},
     {key:'outerDiameter', header:'外径 [mm]', required:true},
     {key:'innerDiameter', header:'内径/近似内径 [mm]', required:true},
+    {key:'innerArea', header:'内径面積 [mm²]', required:true},
     {key:'thicknessMm', header:'厚さ [mm]'},
     {key:'unitMassKgM', header:'単位質量 [kg/m]'},
     {key:'length', header:'長さ'},
@@ -1500,6 +1520,7 @@ function buildConduitSectionRows(items){
     nominal:info.nominal,
     outerDiameter:info.outerDiameter ?? '-',
     innerDiameter:info.innerDiameter ?? '-',
+    innerArea:Number(info.innerDiameter)>0?formatNumber(conduitAreaFromDiameter(info.innerDiameter),1):'-',
     thicknessMm:info.thicknessMm ?? '-',
     unitMassKgM:info.unitMassKgM ?? '-',
     length:conduitLengthLabel(info),
