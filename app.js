@@ -1,9 +1,9 @@
-const APP_VERSION = '3.3.10';
+const APP_VERSION = '3.4.0';
 
 const VERSIONS = {
-  app: 'Web v3.3.10',
+  app: 'Web v3.4.0',
   ampacity: '2026.06-A',
-  physical: '2026.06-A',
+  physical: '2026.08-R',
   form: '2026.06-B'
 };
 
@@ -356,6 +356,25 @@ const CONDUIT_USAGE_HINTS = {
 };
 let conduitWireItems = [];
 
+const RACK_FINISH_LABELS = {
+  P:'標準塗装', Z:'高耐食性めっき', SD:'溶融亜鉛めっき', S:'ステンレス'
+};
+const RACK_WIDTHS_BY_TYPE = {SR:[200,300,400,500,600,800],QR:[200,300,400,500,600,700,800,900,1000,1200]};
+// ネグロス電工「電設資材カタログ2026/27A」掲載の直線ラック単品質量（定尺3m）。
+const RACK_MASS_KG_PER_3M = {
+  P:{SR:[6.8,9.6,10.3,11.2,13.2,15.3],QR:[15.9,16.5,17.7,19.8,21.0,22.3,23.5,24.8,26.0,34.0]},
+  Z:{SR:[9.2,10.0,10.8,11.6,13.9,15.39],QR:[16.7,17.4,18.6,20.8,22.1,23.5,24.7,26.1,27.3,35.7]},
+  SD:{SR:[9.6,10.6,11.7,12.7,13.8,15.9],QR:[16.5,17.1,18.2,20.4,21.6,22.9,24.2,25.4,26.6,31.0]},
+  S:{SR:[7.32,8.17,8.97,9.77,10.57,12.17],QR:[12.41,13.51,14.61,15.71,16.81,17.91,19.01,20.11,21.21,25.61]}
+};
+// 同カタログの支点間距離2.0mにおける等分布許容静荷重。複数掲載値のうち安全側の小さい値（kgf/m）を使用。
+const RACK_ALLOWABLE_KGF_M_AT_2M = {
+  common:{SR:[111,111,111,110,110,109],QR:[404,404,403,403,403,402,402,337,301,530]},
+  S:{SR:[80,80,79,78,77,75],QR:[268,267,267,267,266,266,265,265,250,null]}
+};
+const RACK_WEAK_TYPES = new Set(['HP','AE','CPEV','CPEVS','5C-FB','7C-FB']);
+let rackCableItems = [];
+
 const DATA_ISSUES = [
   'CD管・PF管の42サイズを参考値として追加済み。最終値は採用品の仕様書で確認してください。',
   'VE管の単位質量を参考値として追加済み。最終値は採用品の仕様書で確認してください。'
@@ -396,6 +415,7 @@ const DOC_GROUPS = [
     {id:'data_issues', title:'寸法・質量データ注記', searchable:true, build:buildDataIssuesDoc},
     {id:'conduit_support', title:'配管支持間隔', searchable:false, build:buildConduitSupportDoc},
     {id:'rack_width', title:'ラック幅選定の考え方', searchable:false, build:buildRackWidthDoc},
+    {id:'rack_sr_qr_details', title:'SR・QRラック寸法・質量・許容荷重', searchable:true, build:buildRackSrQrDetailsDoc},
     {id:'rack_support', title:'ラック支持間隔', searchable:false, build:buildRackSupportDoc},
     {id:'rack_seismic', title:'ラック耐震の考え方', searchable:false, build:buildRackSeismicDoc}
   ]},
@@ -488,7 +508,7 @@ let deferredPrompt = null;
 let disclaimerStep = 0;
 
 const $ = id => document.getElementById(id);
-const screens = {calc:$('screen-calc'), conduit:$('screen-conduit'), docs:$('screen-docs'), saved:$('screen-saved'), settings:$('screen-settings')};
+const screens = {calc:$('screen-calc'), conduit:$('screen-conduit'), rack:$('screen-rack'), docs:$('screen-docs'), saved:$('screen-saved'), settings:$('screen-settings')};
 
 function persistState(){
   const uiPrefs = {
@@ -628,6 +648,133 @@ function initConduitCalculator(){
   updateConduitUsageDisplay();
   $('openConduitCalculator')?.addEventListener('click',()=>switchScreen('conduit'));
   $('returnCalcFromConduit')?.addEventListener('click',()=>switchScreen('calc'));
+}
+
+function rackCableTypes(){ return Object.keys(PROTECTIVE_CABLE_REFERENCE_DATA); }
+function rackCableSizes(type){ return Object.keys(PROTECTIVE_CABLE_REFERENCE_DATA[type]||{}).map(Number).sort((a,b)=>a-b); }
+function rackCableRecord(type,size){ return PROTECTIVE_CABLE_REFERENCE_DATA[type]?.[size]||null; }
+function rackCableSizeLabel(type,size){ return rackCableRecord(type,size)?.displaySize||`${size}sq`; }
+function rackReferenceMassKgM(type,size){ const value=Number(rackCableRecord(type,size)?.massKgKm||0); return value>0?value/1000:0; }
+function createRackCableItem(){
+  const type='CVT',size=String(rackCableSizes(type)[0]||'');
+  const record=rackCableRecord(type,Number(size));
+  return{id:crypto.randomUUID(),type,size,count:'1',diameter:String(record?.outerDiameter||''),mass:String(rackReferenceMassKgM(type,Number(size))||'')};
+}
+function resetRackCableReference(item){
+  const record=rackCableRecord(item.type,Number(item.size));
+  item.diameter=String(record?.outerDiameter||'');
+  item.mass=String(rackReferenceMassKgM(item.type,Number(item.size))||'');
+}
+function renderRackCableRows(){
+  const root=$('rackCableRows'); if(!root)return; root.innerHTML='';
+  rackCableItems.forEach(item=>{
+    const row=document.createElement('div'); row.className='rack-cable-row';
+    const sizes=rackCableSizes(item.type); if(!sizes.map(String).includes(String(item.size))){item.size=String(sizes[0]||'');resetRackCableReference(item);}
+    row.innerHTML=`<label><span>線種</span><select class="js-rack-cable-type">${rackCableTypes().map(type=>`<option value="${escapeHtml(type)}" ${type===item.type?'selected':''}>${escapeHtml(type)}</option>`).join('')}</select></label><label><span>サイズ</span><select class="js-rack-cable-size">${sizes.map(size=>`<option value="${size}" ${String(size)===String(item.size)?'selected':''}>${escapeHtml(rackCableSizeLabel(item.type,size))}</option>`).join('')}</select></label><label><span>条数</span><input class="js-rack-cable-count" type="number" inputmode="numeric" min="1" step="1" value="${escapeHtml(item.count)}" /></label><label><span>外径 [mm]</span><input class="js-rack-cable-diameter" type="number" inputmode="decimal" min="0.1" step="0.1" value="${escapeHtml(item.diameter)}" /></label><label><span>質量 [kg/m・条]</span><input class="js-rack-cable-mass" type="number" inputmode="decimal" min="0.001" step="0.001" value="${escapeHtml(item.mass)}" placeholder="要入力" /></label><button type="button" class="ghost small js-rack-cable-remove" ${rackCableItems.length===1?'disabled':''}>削除</button>`;
+    row.querySelector('.js-rack-cable-type').addEventListener('change',e=>{item.type=e.target.value;item.size=String(rackCableSizes(item.type)[0]||'');resetRackCableReference(item);renderRackCableRows();calculateRackSizing();});
+    row.querySelector('.js-rack-cable-size').addEventListener('change',e=>{item.size=e.target.value;resetRackCableReference(item);renderRackCableRows();calculateRackSizing();});
+    row.querySelector('.js-rack-cable-count').addEventListener('input',e=>{item.count=e.target.value;calculateRackSizing();});
+    row.querySelector('.js-rack-cable-diameter').addEventListener('input',e=>{item.diameter=e.target.value;calculateRackSizing();});
+    row.querySelector('.js-rack-cable-mass').addEventListener('input',e=>{item.mass=e.target.value;calculateRackSizing();});
+    row.querySelector('.js-rack-cable-remove').addEventListener('click',()=>{rackCableItems=rackCableItems.filter(v=>v.id!==item.id);renderRackCableRows();calculateRackSizing();});
+    root.appendChild(row);
+  });
+}
+function rackProductCode(type,width,finish){
+  const size=`${Math.round(width/10)}${type==='QR'&&width===1200&&finish!=='S'?'G':''}`;
+  return finish==='P'?`${type}${size}`:`${finish}-${type}${size}`;
+}
+function rackCandidates(finish){
+  const loadGroup=finish==='S'?RACK_ALLOWABLE_KGF_M_AT_2M.S:RACK_ALLOWABLE_KGF_M_AT_2M.common;
+  return ['SR','QR'].flatMap(type=>RACK_WIDTHS_BY_TYPE[type].map((width,index)=>({
+    type,width,height:type==='SR'?70:100,code:rackProductCode(type,width,finish),
+    massKgM:RACK_MASS_KG_PER_3M[finish][type][index]/3,
+    allowableKgM:loadGroup[type][index]
+  }))).sort((a,b)=>a.width-b.width||(a.type==='SR'?-1:1));
+}
+function setRackResultError(message){
+  const el=$('rackResultError'); if(!el)return;
+  el.textContent=message||''; el.classList.toggle('hidden',!message);
+  $('rackResult')?.querySelector('.result-grid')?.classList.toggle('hidden',!!message);
+  $('rackRecommendationReason')?.classList.toggle('hidden',!!message);
+}
+function calculateRackSizing(){
+  if(!$('rackCalculatorPanel'))return;
+  const direction=$('rackDirection').value,finish=$('rackFinish').value;
+  const length=Number($('rackLength').value||0),supportInterval=Number($('rackSupportInterval').value||0);
+  const reserve=Number($('rackFutureReserve').value||0),loadLimit=Number($('rackLoadLimit').value||80);
+  const cover=$('rackCover').checked,coverMass=cover?Number($('rackCoverMass').value||0):0;
+  const separator=$('rackSeparator').checked,separatorWidth=separator?Number($('rackSeparatorWidth').value||0):0;
+  $('rackResult').classList.remove('hidden'); setRackResultError('');
+  const invalid=rackCableItems.find(item=>Number(item.count)<1||Number(item.diameter)<=0);
+  if(invalid||!rackCableItems.length){setRackResultError('すべてのケーブルについて、線種・サイズ・条数・外径を入力してください。');return;}
+  if(reserve<0||reserve>=100){setRackResultError('将来増設余裕は0%以上100%未満で入力してください。');return;}
+  const supportLimit=direction==='horizontal'?2:direction==='vertical'?3:6;
+  if(supportInterval<=0||supportInterval>supportLimit){setRackResultError(`${direction==='horizontal'?'水平部':direction==='vertical'?'垂直部':'EPS立上り'}の支持間隔は${formatNumber(supportLimit,1)}m以下で入力してください。`);return;}
+  if(cover&&coverMass<=0){setRackResultError('カバーを使用する場合は、採用品のカバー質量を入力してください。');return;}
+  const hasWeak=rackCableItems.some(item=>RACK_WEAK_TYPES.has(item.type));
+  const hasPower=rackCableItems.some(item=>!RACK_WEAK_TYPES.has(item.type));
+  const mixed=hasWeak&&hasPower;
+  if(mixed&&!separator){setRackResultError('強電ケーブルと弱電ケーブルが混在しています。セパレータ・離隔条件を設定するか、ラックを分けてください。');return;}
+  const baseWidth=rackCableItems.reduce((sum,item)=>sum+Number(item.diameter)*Number(item.count),0);
+  const requiredWidth=baseWidth/(1-reserve/100)+(mixed?separatorWidth:0);
+  const maxDiameter=Math.max(...rackCableItems.map(item=>Number(item.diameter)));
+  const cableMassKnown=rackCableItems.every(item=>Number(item.mass)>0);
+  const cableMass=rackCableItems.reduce((sum,item)=>sum+Number(item.mass||0)*Number(item.count),0);
+  if(direction==='horizontal'&&!cableMassKnown){setRackResultError('質量データのないケーブルがあります。水平部の荷重選定には、各ケーブルの質量 [kg/m・条] を入力してください。');return;}
+  const candidates=rackCandidates(finish).filter(item=>item.width>=requiredWidth&&(direction==='eps'?item.type==='QR':true)&&(!cover||item.height>=maxDiameter));
+  const evaluated=candidates.map(item=>{
+    const designMass=cableMass+item.massKgM+coverMass;
+    const utilization=item.allowableKgM?designMass/item.allowableKgM*100:Infinity;
+    const loadOk=direction==='horizontal'&&item.allowableKgM?utilization<=loadLimit:true;
+    return{...item,designMass,utilization,loadOk};
+  });
+  const selected=evaluated.find(item=>item.loadOk);
+  if(!selected){
+    setRackResultError(candidates.length?'幅条件を満たすラックはありますが、公開許容荷重値または設定した荷重使用率を満足する製品がありません。支持間隔・分割・別形式を検討し、メーカーへ確認してください。':'SR・QRの標準幅では必要幅または高さを満足しません。ラック分割または別形式を検討してください。');
+    return;
+  }
+  const horizontal=direction==='horizontal';
+  const widthMargin=selected.width-requiredWidth;
+  const supports=length>0&&supportInterval>0?Math.ceil(length/supportInterval)+1:0;
+  const perSupport=horizontal?selected.designMass*supportInterval:0;
+  const totalMass=length>0?selected.designMass*length:0;
+  $('rackRecommended').textContent=`${selected.code}（W${selected.width}・H${selected.height}）`;
+  $('rackRequiredWidth').textContent=`${formatNumber(requiredWidth,1)}mm`;
+  $('rackWidthMargin').textContent=`${formatNumber(widthMargin,1)}mm / ${formatNumber(widthMargin/requiredWidth*100,1)}%`;
+  $('rackCableMass').textContent=cableMassKnown?`${formatNumber(cableMass,2)}kg/m`:'未確認';
+  $('rackSelfMass').textContent=`${formatNumber(selected.massKgM,2)}kg/m`;
+  $('rackDesignMass').textContent=cableMassKnown?`${formatNumber(selected.designMass,2)}kg/m`:'荷重判定対象外';
+  $('rackAllowableLoad').textContent=horizontal&&selected.allowableKgM?`${formatNumber(selected.allowableKgM,0)}kgf/m（2.0m支点間）`:'水平許容荷重表は適用外';
+  $('rackLoadUtilization').textContent=horizontal&&selected.allowableKgM?`${formatNumber(selected.utilization,1)}% / 上限${loadLimit}%`:'縦支持金具で別途確認';
+  $('rackSupportLoad').textContent=horizontal?`${formatNumber(perSupport,1)}kg/支持点（概算）`:'-';
+  $('rackSupportCount').textContent=supports?`${supports}点（概算）`:'-';
+  $('rackBoltSize').textContent=horizontal?(selected.width<=600?'呼び径9mm以上':'呼び径12mm以上'):'垂直支持金具で確認';
+  $('rackTotalMass').textContent=cableMassKnown&&length>0?`${formatNumber(totalMass,1)}kg`:'-';
+  const reason=[];
+  reason.push(`必要有効幅${formatNumber(requiredWidth,1)}mmを満たす最小候補`);
+  if(horizontal)reason.push(`ラック自重込み荷重使用率${formatNumber(selected.utilization,1)}%が上限${loadLimit}%以下`);
+  if(direction==='eps')reason.push('EPS立上りのためQRタイプを選択');
+  if(selected.type==='QR'&&direction!=='eps'){
+    const sameWidthSr=evaluated.find(item=>item.type==='SR'&&item.width===selected.width);
+    if(sameWidthSr&&!sameWidthSr.loadOk)reason.push(`同幅SRの荷重使用率${formatNumber(sameWidthSr.utilization,1)}%が上限超過`);
+    else if(!RACK_WIDTHS_BY_TYPE.SR.includes(selected.width))reason.push(`SRにW${selected.width}の標準幅がない`);
+    else if(cover&&maxDiameter>70)reason.push('カバー条件でSR高さ70mmが不足');
+  }
+  if(mixed)reason.push(`強電・弱電の区画として${formatNumber(separatorWidth,0)}mmを加算`);
+  const fixing=horizontal?'ケーブル固定間隔は3m以下':'ケーブル固定間隔は1.5m以下';
+  const loadBasisNote=horizontal?' 水平荷重判定は指定支持間隔が2.0m未満でも、保守的にメーカー表の2.0m値を使用しています。':'';
+  const verticalNote=horizontal?'':' 垂直・EPSでは水平許容静荷重表を適用していません。立上り支持金具、各階支持、滑落止め、支持元強度を別途確認してください。';
+  $('rackRecommendationReason').textContent=`${reason.join('、')}のため${selected.code}を推奨します。${fixing}を確認してください。${loadBasisNote}${verticalNote} 数値はメーカー資料に基づく参考値で、耐震支持・アンカー・母材・接続部・曲がり部は別途検討が必要です。`;
+}
+function initRackCalculator(){
+  if(!$('rackCalculatorPanel'))return;
+  rackCableItems=[createRackCableItem()]; renderRackCableRows();
+  $('addRackCableBtn').addEventListener('click',()=>{if(rackCableItems.length>=10)return showToast('ケーブル条件は10行までです。');rackCableItems.push(createRackCableItem());renderRackCableRows();calculateRackSizing();});
+  ['rackDirection','rackFinish','rackLength','rackSupportInterval','rackFutureReserve','rackLoadLimit','rackSeparator','rackSeparatorWidth','rackCover','rackCoverMass'].forEach(id=>$(id)?.addEventListener($(id).tagName==='SELECT'||$(id).type==='checkbox'?'change':'input',calculateRackSizing));
+  $('openRackCalculator')?.addEventListener('click',()=>switchScreen('rack'));
+  $('returnCalcFromRack')?.addEventListener('click',()=>switchScreen('calc'));
+  calculateRackSizing();
 }
 
 function escapeHtml(v){
@@ -1682,18 +1829,27 @@ function buildConduitSupportDoc(){
     ]
   };
 }
-function buildRackWidthDoc(){ return textDoc('ラック幅選定の参考メモです。標準施工要領等の考え方を参考に、アプリ内では一般化した概算式として表示します。', [['基本式','必要幅目安=ケーブル外径合計×余裕率'],['ケーブル外径合計','丸形ケーブルは外径×条数　単心ケーブルは外径×必要本数×条数'],['余裕率','1.25〜1.5程度を目安　放熱・離隔・結束・将来増設を考慮'],['標準幅への丸め','必要幅目安を上回る標準ラック幅へ丸めます'],['標準幅','W200 / W300 / W400 / W500 / W600 / W800 の範囲で表示します'],['注意','多段積み、離隔、放熱、曲がり部、立上り、支持条件、耐震条件は別途確認してください'],['アプリでの扱い','初期概算は外径合計×1.35を目安に表示します']]); }
+function buildRackWidthDoc(){ return textDoc('ケーブルラック自動選定で使用する幅の考え方です。配管の占積率は使用せず、ケーブルを一段に並べる前提で算出します。', [['基本式','必要有効幅=(ケーブル外径×条数の合計)÷(1−将来増設余裕率)+強弱区画幅'],['配置条件','動力・電灯ケーブルは原則として積み重ねず、一段配置として扱います'],['将来増設余裕','標準20%。例：余裕20%は現在ケーブルが有効幅の80%を使用する設計'],['強電・弱電混在','内線規程3102-7の離隔・隔壁条件を確認。アプリはセパレータ設定がない場合、選定を停止します'],['標準幅','SR：W200〜W800、QR：W200〜W1200。必要幅以上の最小幅へ丸めます'],['タイプ優先','同じ幅・荷重条件を満たす場合はSRを優先。EPS立上りはQRを選定'],['注意','放熱、電流低減、曲がり半径、接続部、耐震、引込張力は別途確認してください']]); }
+function buildRackSrQrDetailsDoc(){
+  const rows=[];
+  Object.keys(RACK_FINISH_LABELS).forEach(finish=>['SR','QR'].forEach(type=>RACK_WIDTHS_BY_TYPE[type].forEach((width,index)=>{
+    const loadGroup=finish==='S'?RACK_ALLOWABLE_KGF_M_AT_2M.S:RACK_ALLOWABLE_KGF_M_AT_2M.common;
+    rows.push({finish:RACK_FINISH_LABELS[finish],type,product:rackProductCode(type,width,finish),width:`${width}mm`,height:`${type==='SR'?70:100}mm`,mass3m:`${formatNumber(RACK_MASS_KG_PER_3M[finish][type][index],2)}kg/3m`,massM:`${formatNumber(RACK_MASS_KG_PER_3M[finish][type][index]/3,2)}kg/m`,load:loadGroup[type][index]?`${loadGroup[type][index]}kgf/m`:'メーカー確認'});
+  })));
+  return{note:'寸法・単品質量・許容静荷重は、ネグロス電工「電設資材カタログ2026/27A」のメーカー参考値です。許容静荷重は支点間2.0m、等分布荷重、掲載された複数値のうち安全側の小さい値です。製品仕様の変更、組立方向、継ぎ目、支持金具、曲がり部、耐震条件は採用品資料を優先してください。',headers:['仕上げ','タイプ','品番','幅','高さ','単品質量','1m質量','許容静荷重（2.0m支点間）'],keys:['finish','type','product','width','height','mass3m','massM','load'],rows};
+}
 function buildRackSupportDoc(){
   return {
-    note:'ケーブルラック支持間隔の参考表です。支持間隔だけでなく、ラック本体質量、ケーブル質量、付属品、将来増設、地震時荷重を合算し、支持元の強度を確認してください。',
+    note:'公共建築工事標準仕様書（電気設備工事編）令和7年版 2.10.1、2.10.4.3を基にした施工確認表です。内線規程JEAC 8001-2022 3165-2はケーブルの支持・固定等を扱いますが、SR・QRの製品寸法、質量、許容荷重を定めるものではありません。',
     diagramHtml:supportDiagramHtml('rack'),
     headers:['対象','標準支持間隔','追加支持が必要な箇所','支持元の強度確認','主な確認事項'],
     keys:['target','interval','support','base','note'],
     cardLayout:true,
     rows:[
-      {target:'鋼製ケーブルラック・水平部',interval:'2.0m以下',support:'端部、曲がり部、分岐部、接続部付近',base:'天井、梁、壁、架台、アンカー、吊りボルトの許容荷重を確認',note:'ラック幅、積載質量、たわみ、吊りボルト径、耐震支持を確認'},
-      {target:'アルミ製・樹脂製等のラック・水平部',interval:'1.5m以下を目安',support:'端部、曲がり部、分岐部、接続部付近',base:'材質別許容荷重、屋外腐食、温度条件、支持材仕様を確認',note:'採用品仕様、現場条件、支持ピッチを確認'},
-      {target:'垂直部',interval:'3.0m以下',support:'各階支持、立上り・端部・接続部付近',base:'各階床、壁、梁、架台への固定強度を確認',note:'配線室等は仕様により各階支持条件を確認'},
+      {target:'鋼製ケーブルラック・水平部',interval:'2.0m以下',support:'直線部と曲がり・分岐部の接続箇所付近、ラック端部付近',base:'天井、梁、壁、架台、アンカー、吊りボルトの許容荷重を確認',note:'幅600mm以下は吊りボルト呼び径9mm以上、600mm超は12mm以上'},
+      {target:'鋼製以外のラック・水平部',interval:'1.5m以下',support:'直線部と曲がり・分岐部の接続箇所付近、ラック端部付近',base:'材質別許容荷重、屋外腐食、温度条件、支持材仕様を確認',note:'採用品仕様、現場条件、支持ピッチを確認'},
+      {target:'垂直部',interval:'3.0m以下',support:'各階支持、立上り・端部・接続部付近',base:'各階床、壁、梁、架台への固定強度を確認',note:'配線室内では支持間隔6m以下の場合に各階支持とできる条件を確認'},
+      {target:'ラック上のケーブル固定',interval:'水平3.0m以下／垂直1.5m以下',support:'端部、曲がり部、分岐部、引込部',base:'固定金具・結束材・滑落止めの許容荷重を確認',note:'ラック本体の支持間隔とは別の値'},
       {target:'重量ケーブル・将来増設あり',interval:'標準値より短縮を検討',support:'集中荷重部、ケーブル引込部、端末部',base:'ラック自重＋ケーブル質量＋付属品＋将来増設＋地震時荷重で支持元を検討',note:'支持元の強度検討が必要。必要に応じ構造担当・設計者へ確認'},
       {target:'共通',interval:'設計図・仕様書優先',support:'耐震支持、振止め、伸縮部、壁貫通部',base:'母材強度、アンカー径・埋込み深さ、吊り材径、座屈を確認',note:'本表は自動判定ではなく施工確認用の参考値'}
     ]
@@ -2324,5 +2480,5 @@ function runDisclaimer(){
   $('disclaimerNextBtn').onclick = ()=>{ if (disclaimerStep === 1) { disclaimerStep = 2; $('disclaimerTitle').textContent = '重要な確認'; $('disclaimerBody').textContent = '最終判断は利用者責任で行ってください。内線規定、関係法令、現場条件、機器仕様、保護協調等を必ず確認してください。'; } else { localStorage.setItem(STORAGE.disclaimer,'accepted'); $('disclaimerDialog').close(); } };
 }
 function registerSW(){ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-function init(){ ensureDocsUpgraded(); bindEvents(); initConduitCalculator(); applySettingsValues(); renderAll(); switchScreen('calc'); switchSavedTab('history'); runDisclaimer(); registerSW(); }
+function init(){ ensureDocsUpgraded(); bindEvents(); initConduitCalculator(); initRackCalculator(); applySettingsValues(); renderAll(); switchScreen('calc'); switchSavedTab('history'); runDisclaimer(); registerSW(); }
 document.addEventListener('DOMContentLoaded', init);

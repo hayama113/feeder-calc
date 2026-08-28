@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260828-conduit-usage-buttons';
+const CACHE_NAME = 'feeder-calc-v3-20260828-rack-auto-sizing';
 const ASSETS = [
   './',
   './index.html',
