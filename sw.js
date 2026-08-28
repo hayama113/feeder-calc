@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260827-weak-current-cables';
+const CACHE_NAME = 'feeder-calc-v3-20260828-cable-series-audit';
 const ASSETS = [
   './',
   './index.html',

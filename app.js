@@ -1,7 +1,7 @@
-const APP_VERSION = '3.3.6';
+const APP_VERSION = '3.3.7';
 
 const VERSIONS = {
-  app: 'Web v3.3.6',
+  app: 'Web v3.3.7',
   ampacity: '2026.06-A',
   physical: '2026.06-A',
   form: '2026.06-B'
@@ -300,47 +300,40 @@ const FLEXIBLE_CONDUIT = {
   ]
 };
 
-// メーカーを特定しない概算仕上外径。自動選定結果は参考値として扱う。
+// 公開仕様値を基にした参考仕上外径。採用品の仕様書を優先する。
 const SINGLE_WIRE_REFERENCE_DATA = {
-  'IV': {2:3.4,3.5:4.0,5.5:5.0,8:6.0,14:7.6,22:9.2,38:11.4,60:14.0,100:17.5,150:21.0,200:23.5,250:26.0,325:29.5},
-  'EM-IE/F': {2:3.6,3.5:4.2,5.5:5.2,8:6.2,14:7.8,22:9.5,38:11.8,60:14.5,100:18.0,150:21.5,200:24.0,250:26.5,325:30.0}
+  'IV': {0.9:2.8,1.25:3.0,2:3.4,3.5:4.0,5.5:5.0,8:6.0,14:7.6,22:9.2,38:11.5,60:14.0,100:17.0,150:21.0,200:23.0,250:26.0,325:29.0},
+  'EM-IE/F': {0.9:2.8,1.25:3.0,2:3.4,3.5:4.0,5.5:5.0,8:5.6,14:6.8,22:8.4,38:10.5,60:13.0,100:17.0,150:21.0,200:24.0,250:26.0,325:29.0}
 };
-function buildReferenceCableOptions(configs, counts, unit) {
-  const options = {};
-  let id = 1;
-  configs.forEach(config => {
-    counts.forEach(count => {
-      options[id++] = {
-        outerDiameter: Number((config.offset + config.factor * Math.sqrt(count * (unit === 'P' ? 2 : 1))).toFixed(1)),
-        displaySize: `${config.size}mm-${count}${unit}`
-      };
-    });
-  });
-  return options;
+function referenceOptions(rows) {
+  return Object.fromEntries(rows.map((row,index)=>[index+1,{displaySize:row[0],outerDiameter:row[1]}]));
 }
-const HP_REFERENCE_DATA = buildReferenceCableOptions([
-  {size:'0.9',offset:3.3,factor:2.0},
-  {size:'1.2',offset:3.6,factor:2.35}
-], Array.from({length:19},(_,index)=>index+2), 'C');
-const AE_REFERENCE_DATA = buildReferenceCableOptions([
-  {size:'0.9',offset:3.0,factor:1.9},
-  {size:'1.2',offset:3.3,factor:2.2}
-], Array.from({length:9},(_,index)=>index+2), 'C');
-const CPEV_REFERENCE_DATA = buildReferenceCableOptions([
-  {size:'0.65',offset:3.5,factor:1.55},
-  {size:'0.9',offset:3.8,factor:1.9},
-  {size:'1.2',offset:4.1,factor:2.2}
-], Array.from({length:30},(_,index)=>index+1), 'P');
-const CPEVS_REFERENCE_DATA = Object.fromEntries(Object.entries(CPEV_REFERENCE_DATA).map(([key,value])=>[
-  key,
-  {...value,outerDiameter:Number((value.outerDiameter+0.8).toFixed(1))}
-]));
+function cableReference(type, sizes) {
+  return Object.fromEntries(sizes.map(size=>[size,CABLE_DATA[type]?.[size]]).filter(([,record])=>record));
+}
+const HP_REFERENCE_DATA = referenceOptions([
+  ['HP-F 0.9mm-2C',5.0],['HP-F 0.9mm-3C',6.5],['HP 0.9mm-4C',5.4],['HP 0.9mm-6C',7.0],['HP 0.9mm-8C',8.0],['HP 0.9mm-10C',8.0],
+  ['HP-F 1.2mm-2C',6.0],['HP-F 1.2mm-3C',7.5],['HP 1.2mm-4C',6.2],['HP 1.2mm-6C',8.0],['HP 1.2mm-8C',9.0],['HP 1.2mm-10C',9.5],
+  ['HP 0.9mm-3P',7.5],['HP 0.9mm-5P',8.5],['HP 0.9mm-7P',10.0],['HP 0.9mm-10P',11.0],['HP 0.9mm-15P',13.0],['HP 0.9mm-20P',14.5],['HP 0.9mm-30P',18.0],['HP 0.9mm-50P',23.0],
+  ['HP 1.2mm-3P',9.0],['HP 1.2mm-5P',10.5],['HP 1.2mm-7P',12.0],['HP 1.2mm-10P',14.0],['HP 1.2mm-15P',16.5],['HP 1.2mm-20P',19.0],['HP 1.2mm-30P',22.5],['HP 1.2mm-50P',29.5]
+]);
+const AE_REFERENCE_DATA = referenceOptions([
+  ['0.9mm-2C',4.0],['0.9mm-3C',4.3],['0.9mm-4C',4.6],
+  ['1.2mm-2C',4.8],['1.2mm-3C',5.3],['1.2mm-4C',5.8]
+]);
+const CPEV_REFERENCE_DATA = referenceOptions([
+  ['0.65mm-1P',4.6],['0.65mm-2P',5.4],['0.65mm-3P',5.7],['0.65mm-5P',6.7],['0.65mm-7P',7.3],['0.65mm-10P',8.2],['0.65mm-15P',9.6],['0.65mm-20P',10.5],['0.65mm-30P',12.8],['0.65mm-50P',16.3],['0.65mm-70P',19.3],['0.65mm-100P',22.6],
+  ['0.9mm-1P',4.8],['0.9mm-2P',6.5],['0.9mm-3P',6.8],['0.9mm-5P',8.2],['0.9mm-7P',9.0],['0.9mm-10P',10.2],['0.9mm-15P',12.4],['0.9mm-20P',14.1],['0.9mm-30P',17.0],['0.9mm-50P',22.8],['0.9mm-70P',26.9],['0.9mm-100P',31.8],
+  ['1.2mm-1P',5.5],['1.2mm-2P',7.6],['1.2mm-3P',9.3],['1.2mm-5P',10.2],['1.2mm-7P',11.5],['1.2mm-10P',13.6],['1.2mm-15P',16.2],['1.2mm-20P',18.6],['1.2mm-30P',22.8],['1.2mm-50P',31.8],['1.2mm-70P',35.2],['1.2mm-100P',44.7]
+]);
+// CPEVSはメーカー差を考慮し、CPEV系列の個別参考外径に0.8mmの安全側余裕を加える。
+const CPEVS_REFERENCE_DATA = Object.fromEntries(Object.entries(CPEV_REFERENCE_DATA).map(([key,value])=>[key,{...value,outerDiameter:Number((value.outerDiameter+0.8).toFixed(1))}]));
 // ケーブル保護管選定専用データ。VVFのサイズは導体径、外径は長径側の参考値。
 const PROTECTIVE_CABLE_REFERENCE_DATA = {
-  'CV': CABLE_DATA['CV-1C'],
-  'CV-2C': {3.5:{outerDiameter:12.5},5.5:{outerDiameter:14.0},...CABLE_DATA['CV-2C']},
-  'CV-3C': {3.5:{outerDiameter:13.5},5.5:{outerDiameter:15.5},...CABLE_DATA['CV-3C']},
-  'CV-4C': {3.5:{outerDiameter:15.0},5.5:{outerDiameter:17.0},...CABLE_DATA['CV-4C']},
+  'CV': {2:{outerDiameter:6.4},...CABLE_DATA['CV-1C']},
+  'CV-2C': {2:{outerDiameter:10.5},3.5:{outerDiameter:11.5},5.5:{outerDiameter:13.5},...cableReference('CV-2C',[8,14,22,38,60,100,150,200,250,325])},
+  'CV-3C': {2:{outerDiameter:11.0},3.5:{outerDiameter:12.5},5.5:{outerDiameter:14.5},...cableReference('CV-3C',[8,14,22,38,60,100,150,200,250,325])},
+  'CV-4C': {2:{outerDiameter:12.0},3.5:{outerDiameter:13.5},5.5:{outerDiameter:16.0},8:{outerDiameter:17.0},...cableReference('CV-4C',[14,22,38,60,100,150])},
   'CVD': CABLE_DATA.CVD,
   'CVT': CABLE_DATA.CVT,
   'CVQ': CABLE_DATA.CVQ,
