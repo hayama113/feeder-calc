@@ -668,7 +668,7 @@ function rackCableRecord(type,size){ return PROTECTIVE_CABLE_REFERENCE_DATA[type
 function rackCableSizeLabel(type,size){ return rackCableRecord(type,size)?.displaySize||`${size}sq`; }
 function estimatedRackMassKgM(record){
   const diameter=Number(record?.outerDiameter||0);
-  return diameter>0?conduitAreaFromDiameter(diameter)*0.003:0;
+  return diameter>0?Number((conduitAreaFromDiameter(diameter)*0.003).toFixed(3)):0;
 }
 function rackReferenceMassKgM(type,size){
   const record=rackCableRecord(type,size),value=Number(record?.massKgKm||0);
