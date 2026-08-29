@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260828-rack-auto-sizing';
+const CACHE_NAME = 'feeder-calc-v3-20260828-full-audit-fixes';
 const ASSETS = [
   './',
   './index.html',
