@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v3-20260828-full-audit-fixes';
+const CACHE_NAME = 'feeder-calc-v3-20260829-rack-mass-rounding';
 const ASSETS = [
   './',
   './index.html',
