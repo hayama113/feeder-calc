@@ -104,7 +104,7 @@
             </label>
             <label>
               <span>配線長 [m]</span>
-              <input id="wiringLength" type="number" inputmode="decimal" />
+              <input id="wiringLength" type="number" inputmode="decimal" min="0.1" step="0.1" />
             </label>
             <label>
               <span>電圧降下判定基準</span>
@@ -156,7 +156,7 @@
             <label id="baseAmpacityField" class="manual-cable-only hidden">
               <span>基準許容電流 [A]</span>
               <div class="inline-input-wrap">
-                <input id="baseAmpacity" type="number" inputmode="decimal" />
+                <input id="baseAmpacity" type="number" inputmode="decimal" min="0.1" step="0.1" />
                 <span id="ampacityModeBadge" class="mode-badge">未設定</span>
               </div>
               <div class="field-hint">手動指定時の判定用ケーブルサイズです。通常は推奨ケーブル・選定基準ケーブルを確認してください。</div>
@@ -399,6 +399,7 @@
             <label class="checkbox-label"><input id="conduitFutureExpansion" type="checkbox" /><span>将来増設を考慮する</span></label>
           </div>
           <div id="conduitResult" class="hidden top-gap">
+            <div id="conduitResultError" class="result-notice danger hidden"></div>
             <div class="result-grid top-gap">
               <div class="result-card"><span id="conduitActualFillLabel">推奨配管の占有率</span><strong id="conduitActualFill">-</strong></div>
               <div class="result-card"><span id="conduitLimitResultLabel">設定上限</span><strong id="conduitLimitResult">-</strong></div>
@@ -526,7 +527,7 @@
           <div class="panel-title">設定</div>
           <div class="stack tight">
             <div class="readonly-row"><span>現在のモード</span><strong>Webアプリ版</strong></div>
-            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.4.0</strong></div>
+            <div class="readonly-row"><span>アプリ版</span><strong>Web v3.4.1</strong></div>
             <div class="readonly-row"><span>許容電流データ版</span><strong id="verAmpacity">2026.04-A</strong></div>
             <div class="readonly-row"><span>外径・質量データ版</span><strong id="verPhysical">2026.04-D</strong></div>
             <div class="readonly-row"><span>帳票様式版</span><strong id="verForm">2026.04-C</strong></div>
@@ -593,6 +594,6 @@
 
   <div id="formulaPopup" class="formula-popup hidden" role="status"></div>
   <div id="toast"></div>
-  <script src="app.js?v=20260828_rack_auto_sizing"></script>
+  <script src="app.js?v=20260828_full_audit_fixes"></script>
 </body>
 </html>

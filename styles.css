@@ -118,6 +118,7 @@ button.full,.full{width:100%;}
 .fail-item{padding:10px 12px;border-radius:12px;background:var(--danger-bg);color:var(--danger);font-weight:700;line-height:1.5;}
 .result-error{padding:14px;border-radius:14px;background:var(--danger-bg);color:var(--danger);font-weight:700;line-height:1.6;}
 .result-notice{padding:12px 14px;border-radius:14px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-weight:700;line-height:1.6;}
+.result-notice.danger{background:var(--danger-bg);border-color:#fecaca;color:var(--danger);}
 .load-result-card,.saved-card,.compare-card,.doc-group-card,.doc-item-card{border:1px solid var(--line);border-radius:16px;padding:14px;background:linear-gradient(180deg,#fff,#fbfdff);}
 .status-ok{color:var(--good);font-weight:700;}
 .status-ng{color:var(--danger);font-weight:700;}

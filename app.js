@@ -1,9 +1,9 @@
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.4.1';
 
 const VERSIONS = {
-  app: 'Web v3.4.0',
+  app: 'Web v3.4.1',
   ampacity: '2026.06-A',
-  physical: '2026.08-R',
+  physical: '2026.08-S',
   form: '2026.06-B'
 };
 
@@ -17,6 +17,7 @@ const STORAGE = {
 };
 
 const BREAKER_SIZES = [10,15,20,30,40,50,60,75,100,125,150,175,200,225,250,300,350,400,500,600,800];
+const MAX_BREAKER_CURRENT = BREAKER_SIZES.at(-1);
 const POWER_FACTOR_OPTIONS = ['0.5','0.55','0.6','0.65','0.7','0.75','0.8','0.85','0.9','0.95','1.0'];
 const EFFICIENCY_OPTIONS = [...POWER_FACTOR_OPTIONS];
 const BREAKER_MARGIN_RATIO_OPTIONS = [
@@ -72,7 +73,6 @@ const INSTALL_COEF = {
 };
 const CONDITION_COEF = {'一般':1.00,'密集':0.90,'日射あり':0.95};
 const DEFAULT_DROP_LIMIT_PERCENT = 5.0;
-const RACK_WIDTHS = [200,300,400,500,600,800];
 const MAX_SAVED_ITEMS = 10;
 const savedSortDefault = 'newest';
 const compareModeDefault = 'major';
@@ -330,15 +330,15 @@ const CPEV_REFERENCE_DATA = referenceOptions([
 const CPEVS_REFERENCE_DATA = Object.fromEntries(Object.entries(CPEV_REFERENCE_DATA).map(([key,value])=>[key,{...value,outerDiameter:Number((value.outerDiameter+0.8).toFixed(1))}]));
 // ケーブル保護管選定専用データ。VVFのサイズは導体径、外径は長径側の参考値。
 const PROTECTIVE_CABLE_REFERENCE_DATA = {
-  'CV': {2:{outerDiameter:6.4},...CABLE_DATA['CV-1C']},
-  'CV-2C': {2:{outerDiameter:10.5},3.5:{outerDiameter:11.5},5.5:{outerDiameter:13.5},...cableReference('CV-2C',[8,14,22,38,60,100,150,200,250,325])},
-  'CV-3C': {2:{outerDiameter:11.0},3.5:{outerDiameter:12.5},5.5:{outerDiameter:14.5},...cableReference('CV-3C',[8,14,22,38,60,100,150,200,250,325])},
-  'CV-4C': {2:{outerDiameter:12.0},3.5:{outerDiameter:13.5},5.5:{outerDiameter:16.0},8:{outerDiameter:17.0},...cableReference('CV-4C',[14,22,38,60,100,150])},
+  'CV': {2:{outerDiameter:6.4,massKgKm:54},...CABLE_DATA['CV-1C']},
+  'CV-2C': {2:{outerDiameter:10.5,massKgKm:130},3.5:{outerDiameter:11.5,massKgKm:180},5.5:{outerDiameter:13.5,massKgKm:230},...CABLE_DATA['CV-2C']},
+  'CV-3C': {2:{outerDiameter:11.0,massKgKm:160},3.5:{outerDiameter:12.5,massKgKm:230},5.5:{outerDiameter:14.5,massKgKm:310},...CABLE_DATA['CV-3C']},
+  'CV-4C': {2:{outerDiameter:12.0,massKgKm:200},3.5:{outerDiameter:13.5,massKgKm:300},5.5:{outerDiameter:16.0,massKgKm:430},8:{outerDiameter:17.0,massKgKm:590},...CABLE_DATA['CV-4C']},
   'CVD': CABLE_DATA.CVD,
   'CVT': CABLE_DATA.CVT,
   'CVQ': CABLE_DATA.CVQ,
-  'VVF-2C': {1.6:{outerDiameter:9.4,displaySize:'1.6mm'},2.0:{outerDiameter:10.5,displaySize:'2.0mm'},2.6:{outerDiameter:12.5,displaySize:'2.6mm'}},
-  'VVF-3C': {1.6:{outerDiameter:13.0,displaySize:'1.6mm'},2.0:{outerDiameter:14.0,displaySize:'2.0mm'},2.6:{outerDiameter:17.0,displaySize:'2.6mm'}},
+  'VVF-2C': {1.6:{outerDiameter:9.4,massKgKm:90,displaySize:'1.6mm'},2.0:{outerDiameter:10.5,massKgKm:120,displaySize:'2.0mm'},2.6:{outerDiameter:12.5,massKgKm:180,displaySize:'2.6mm'}},
+  'VVF-3C': {1.6:{outerDiameter:13.0,massKgKm:130,displaySize:'1.6mm'},2.0:{outerDiameter:14.0,massKgKm:170,displaySize:'2.0mm'},2.6:{outerDiameter:17.0,massKgKm:250,displaySize:'2.6mm'}},
   'HP': HP_REFERENCE_DATA,
   'AE': AE_REFERENCE_DATA,
   'CPEV': CPEV_REFERENCE_DATA,
@@ -579,11 +579,23 @@ function renderConduitOptions(){
   const previousFamily=familyEl.value; setSelectOptions(familyEl,Object.keys(families),'選択してください',previousFamily);
 }
 function conduitAreaFromDiameter(diameter){return Math.PI*Math.pow(Number(diameter||0),2)/4;}
+function setConduitResultError(message){
+  const result=$('conduitResult'),error=$('conduitResultError'),grid=result?.querySelector('.result-grid'),reason=$('conduitRecommendationReason');
+  if(!result||!error)return;
+  result.classList.remove('hidden'); error.textContent=message||''; error.classList.toggle('hidden',!message);
+  grid?.classList.toggle('hidden',!!message); reason?.classList.toggle('hidden',!!message);
+}
 function calculateConduitSizing(){
   const usage=conduitUsage(),family=$('conduitFamily')?.value,limit=Number($('conduitFillLimit')?.value||32),conduits=allConduitFamilies()[family]||[];
   updateConduitUsageDisplay();
-  const invalidItem=conduitWireItems.find(item=>!conduitWireDiameter(item.type,Number(item.size))||Number(item.count)<1);
-  if(!family||invalidItem){$('conduitResult')?.classList.add('hidden');return;}
+  const invalidItem=conduitWireItems.find(item=>!conduitWireDiameter(item.type,Number(item.size))||!Number.isInteger(Number(item.count))||Number(item.count)<1);
+  if(!family){$('conduitResult')?.classList.add('hidden');return;}
+  if(invalidItem){setConduitResultError('本数・条数は1以上の整数で入力してください。');return;}
+  const lengthValue=$('conduitLength')?.value,bendValue=$('conduitBendCount')?.value;
+  const length=lengthValue===''?0:Number(lengthValue),bends=bendValue===''?0:Number(bendValue);
+  if(!Number.isFinite(length)||length<0){setConduitResultError('配管長は0m以上で入力してください。');return;}
+  if(!Number.isInteger(bends)||bends<0){setConduitResultError('曲がり箇所数は0以上の整数で入力してください。');return;}
+  setConduitResultError('');
   const wireArea=conduitWireItems.reduce((sum,item)=>sum+conduitAreaFromDiameter(conduitWireDiameter(item.type,Number(item.size)))*Number(item.count),0);
   const cableCount=conduitWireItems.reduce((sum,item)=>sum+Number(item.count),0);
   const multipleCables=usage==='protection'&&cableCount>=2;
@@ -593,7 +605,7 @@ function calculateConduitSizing(){
   const requiredPipeArea=multipleCables?wireArea/(protectionFillLimit/100):0;
   const evaluated=conduits.map(pipe=>{const pipeArea=conduitAreaFromDiameter(pipe.innerDiameter),fill=pipeArea?wireArea/pipeArea*100:Infinity;return{...pipe,pipeArea,fill,ok:usage==='protection'?(multipleCables?fill<=protectionFillLimit:pipe.innerDiameter>=requiredInnerDiameter):fill<=limit};});
   const recommendIndex=evaluated.findIndex(v=>v.ok),recommended=recommendIndex>=0?evaluated[recommendIndex]:null;
-  const length=Number($('conduitLength')?.value||0),bends=Number($('conduitBendCount')?.value||0),mixed=new Set(conduitWireItems.map(v=>v.type)).size>1,reasons=[];
+  const mixed=new Set(conduitWireItems.map(v=>v.type)).size>1,reasons=[];
   if(length>30)reasons.push('配管長が30mを超える'); if(bends>=2)reasons.push('曲がりが2箇所以上'); if(mixed)reasons.push('複数線種を混在'); if(usage==='wiring'&&limit===48)reasons.push('48%の条件付き基準を使用'); if($('conduitFutureExpansion')?.checked)reasons.push('将来増設を考慮');
   $('conduitResult').classList.remove('hidden');
   const displayPipe=recommended;
@@ -654,28 +666,37 @@ function rackCableTypes(){ return Object.keys(PROTECTIVE_CABLE_REFERENCE_DATA); 
 function rackCableSizes(type){ return Object.keys(PROTECTIVE_CABLE_REFERENCE_DATA[type]||{}).map(Number).sort((a,b)=>a-b); }
 function rackCableRecord(type,size){ return PROTECTIVE_CABLE_REFERENCE_DATA[type]?.[size]||null; }
 function rackCableSizeLabel(type,size){ return rackCableRecord(type,size)?.displaySize||`${size}sq`; }
-function rackReferenceMassKgM(type,size){ const value=Number(rackCableRecord(type,size)?.massKgKm||0); return value>0?value/1000:0; }
+function estimatedRackMassKgM(record){
+  const diameter=Number(record?.outerDiameter||0);
+  return diameter>0?conduitAreaFromDiameter(diameter)*0.003:0;
+}
+function rackReferenceMassKgM(type,size){
+  const record=rackCableRecord(type,size),value=Number(record?.massKgKm||0);
+  return value>0?value/1000:estimatedRackMassKgM(record);
+}
+function rackMassSource(type,size){ return Number(rackCableRecord(type,size)?.massKgKm||0)>0?'参考データ':'外径からの安全側概算'; }
 function createRackCableItem(){
   const type='CVT',size=String(rackCableSizes(type)[0]||'');
   const record=rackCableRecord(type,Number(size));
-  return{id:crypto.randomUUID(),type,size,count:'1',diameter:String(record?.outerDiameter||''),mass:String(rackReferenceMassKgM(type,Number(size))||'')};
+  return{id:crypto.randomUUID(),type,size,count:'1',diameter:String(record?.outerDiameter||''),mass:String(rackReferenceMassKgM(type,Number(size))||''),massSource:rackMassSource(type,Number(size))};
 }
 function resetRackCableReference(item){
   const record=rackCableRecord(item.type,Number(item.size));
   item.diameter=String(record?.outerDiameter||'');
   item.mass=String(rackReferenceMassKgM(item.type,Number(item.size))||'');
+  item.massSource=rackMassSource(item.type,Number(item.size));
 }
 function renderRackCableRows(){
   const root=$('rackCableRows'); if(!root)return; root.innerHTML='';
   rackCableItems.forEach(item=>{
     const row=document.createElement('div'); row.className='rack-cable-row';
     const sizes=rackCableSizes(item.type); if(!sizes.map(String).includes(String(item.size))){item.size=String(sizes[0]||'');resetRackCableReference(item);}
-    row.innerHTML=`<label><span>線種</span><select class="js-rack-cable-type">${rackCableTypes().map(type=>`<option value="${escapeHtml(type)}" ${type===item.type?'selected':''}>${escapeHtml(type)}</option>`).join('')}</select></label><label><span>サイズ</span><select class="js-rack-cable-size">${sizes.map(size=>`<option value="${size}" ${String(size)===String(item.size)?'selected':''}>${escapeHtml(rackCableSizeLabel(item.type,size))}</option>`).join('')}</select></label><label><span>条数</span><input class="js-rack-cable-count" type="number" inputmode="numeric" min="1" step="1" value="${escapeHtml(item.count)}" /></label><label><span>外径 [mm]</span><input class="js-rack-cable-diameter" type="number" inputmode="decimal" min="0.1" step="0.1" value="${escapeHtml(item.diameter)}" /></label><label><span>質量 [kg/m・条]</span><input class="js-rack-cable-mass" type="number" inputmode="decimal" min="0.001" step="0.001" value="${escapeHtml(item.mass)}" placeholder="要入力" /></label><button type="button" class="ghost small js-rack-cable-remove" ${rackCableItems.length===1?'disabled':''}>削除</button>`;
+    row.innerHTML=`<label><span>線種</span><select class="js-rack-cable-type">${rackCableTypes().map(type=>`<option value="${escapeHtml(type)}" ${type===item.type?'selected':''}>${escapeHtml(type)}</option>`).join('')}</select></label><label><span>サイズ</span><select class="js-rack-cable-size">${sizes.map(size=>`<option value="${size}" ${String(size)===String(item.size)?'selected':''}>${escapeHtml(rackCableSizeLabel(item.type,size))}</option>`).join('')}</select></label><label><span>条数</span><input class="js-rack-cable-count" type="number" inputmode="numeric" min="1" step="1" value="${escapeHtml(item.count)}" /></label><label><span>外径 [mm]</span><input class="js-rack-cable-diameter" type="number" inputmode="decimal" min="0.1" step="0.1" value="${escapeHtml(item.diameter)}" /></label><label><span>質量 [kg/m・条]</span><input class="js-rack-cable-mass" type="number" inputmode="decimal" min="0.001" step="0.001" value="${escapeHtml(item.mass)}" placeholder="要入力" /><span class="field-hint js-rack-mass-source">${escapeHtml(item.massSource||'手動入力')}</span></label><button type="button" class="ghost small js-rack-cable-remove" ${rackCableItems.length===1?'disabled':''}>削除</button>`;
     row.querySelector('.js-rack-cable-type').addEventListener('change',e=>{item.type=e.target.value;item.size=String(rackCableSizes(item.type)[0]||'');resetRackCableReference(item);renderRackCableRows();calculateRackSizing();});
     row.querySelector('.js-rack-cable-size').addEventListener('change',e=>{item.size=e.target.value;resetRackCableReference(item);renderRackCableRows();calculateRackSizing();});
     row.querySelector('.js-rack-cable-count').addEventListener('input',e=>{item.count=e.target.value;calculateRackSizing();});
     row.querySelector('.js-rack-cable-diameter').addEventListener('input',e=>{item.diameter=e.target.value;calculateRackSizing();});
-    row.querySelector('.js-rack-cable-mass').addEventListener('input',e=>{item.mass=e.target.value;calculateRackSizing();});
+    row.querySelector('.js-rack-cable-mass').addEventListener('input',e=>{item.mass=e.target.value;item.massSource='手動入力';row.querySelector('.js-rack-mass-source').textContent='手動入力';calculateRackSizing();});
     row.querySelector('.js-rack-cable-remove').addEventListener('click',()=>{rackCableItems=rackCableItems.filter(v=>v.id!==item.id);renderRackCableRows();calculateRackSizing();});
     root.appendChild(row);
   });
@@ -706,12 +727,14 @@ function calculateRackSizing(){
   const cover=$('rackCover').checked,coverMass=cover?Number($('rackCoverMass').value||0):0;
   const separator=$('rackSeparator').checked,separatorWidth=separator?Number($('rackSeparatorWidth').value||0):0;
   $('rackResult').classList.remove('hidden'); setRackResultError('');
-  const invalid=rackCableItems.find(item=>Number(item.count)<1||Number(item.diameter)<=0);
+  const invalid=rackCableItems.find(item=>!Number.isInteger(Number(item.count))||Number(item.count)<1||!Number.isFinite(Number(item.diameter))||Number(item.diameter)<=0);
   if(invalid||!rackCableItems.length){setRackResultError('すべてのケーブルについて、線種・サイズ・条数・外径を入力してください。');return;}
-  if(reserve<0||reserve>=100){setRackResultError('将来増設余裕は0%以上100%未満で入力してください。');return;}
+  if(!Number.isFinite(length)||length<0){setRackResultError('ラック延長は0m以上で入力してください。');return;}
+  if(!Number.isFinite(reserve)||reserve<0||reserve>80){setRackResultError('将来増設余裕は0%以上80%以下で入力してください。');return;}
   const supportLimit=direction==='horizontal'?2:direction==='vertical'?3:6;
   if(supportInterval<=0||supportInterval>supportLimit){setRackResultError(`${direction==='horizontal'?'水平部':direction==='vertical'?'垂直部':'EPS立上り'}の支持間隔は${formatNumber(supportLimit,1)}m以下で入力してください。`);return;}
   if(cover&&coverMass<=0){setRackResultError('カバーを使用する場合は、採用品のカバー質量を入力してください。');return;}
+  if(separator&&(!Number.isFinite(separatorWidth)||separatorWidth<0)){setRackResultError('セパレータ・離隔幅は0mm以上で入力してください。');return;}
   const hasWeak=rackCableItems.some(item=>RACK_WEAK_TYPES.has(item.type));
   const hasPower=rackCableItems.some(item=>!RACK_WEAK_TYPES.has(item.type));
   const mixed=hasWeak&&hasPower;
@@ -720,6 +743,7 @@ function calculateRackSizing(){
   const requiredWidth=baseWidth/(1-reserve/100)+(mixed?separatorWidth:0);
   const maxDiameter=Math.max(...rackCableItems.map(item=>Number(item.diameter)));
   const cableMassKnown=rackCableItems.every(item=>Number(item.mass)>0);
+  const hasEstimatedMass=rackCableItems.some(item=>item.massSource==='外径からの安全側概算');
   const cableMass=rackCableItems.reduce((sum,item)=>sum+Number(item.mass||0)*Number(item.count),0);
   if(direction==='horizontal'&&!cableMassKnown){setRackResultError('質量データのないケーブルがあります。水平部の荷重選定には、各ケーブルの質量 [kg/m・条] を入力してください。');return;}
   const candidates=rackCandidates(finish).filter(item=>item.width>=requiredWidth&&(direction==='eps'?item.type==='QR':true)&&(!cover||item.height>=maxDiameter));
@@ -765,7 +789,8 @@ function calculateRackSizing(){
   const fixing=horizontal?'ケーブル固定間隔は3m以下':'ケーブル固定間隔は1.5m以下';
   const loadBasisNote=horizontal?' 水平荷重判定は指定支持間隔が2.0m未満でも、保守的にメーカー表の2.0m値を使用しています。':'';
   const verticalNote=horizontal?'':' 垂直・EPSでは水平許容静荷重表を適用していません。立上り支持金具、各階支持、滑落止め、支持元強度を別途確認してください。';
-  $('rackRecommendationReason').textContent=`${reason.join('、')}のため${selected.code}を推奨します。${fixing}を確認してください。${loadBasisNote}${verticalNote} 数値はメーカー資料に基づく参考値で、耐震支持・アンカー・母材・接続部・曲がり部は別途検討が必要です。`;
+  const estimatedMassNote=hasEstimatedMass?' 質量に外径からの安全側概算値（見掛け密度3,000kg/m³相当）を含みます。採用品の実質量へ置き換えて再確認してください。':'';
+  $('rackRecommendationReason').textContent=`${reason.join('、')}のため${selected.code}を推奨します。${fixing}を確認してください。${loadBasisNote}${verticalNote}${estimatedMassNote} 数値はメーカー資料に基づく参考値で、耐震支持・アンカー・母材・接続部・曲がり部は別途検討が必要です。`;
 }
 function initRackCalculator(){
   if(!$('rackCalculatorPanel'))return;
@@ -1016,13 +1041,14 @@ function getLoadSummary(){
 function requiredBreakerFromLoad(){
   const totalCurrent = getLoadSummary().totalCurrent;
   if (!totalCurrent) return 0;
-  return BREAKER_SIZES.find(v=>v>=totalCurrent) || BREAKER_SIZES.at(-1);
+  return BREAKER_SIZES.find(v=>v>=totalCurrent) ?? null;
 }
 function recommendedBreakerFromMargin(){
   const totalCurrent = getLoadSummary().totalCurrent;
   const ratio = Number(state.breakerMarginRatio || 0.8);
   const basis = ratio ? totalCurrent / ratio : totalCurrent;
-  return BREAKER_SIZES.find(v=>v>=basis) || BREAKER_SIZES.at(-1);
+  if(!basis)return 0;
+  return BREAKER_SIZES.find(v=>v>=basis) ?? null;
 }
 function existingBreakerForSizing(){ return Number(state.existingBreaker || 0); }
 function adoptedBreaker(){ return recommendedBreakerFromMargin(); }
@@ -1083,10 +1109,14 @@ function voltageDropBasisCurrent(breakerCurrent, loadCurrent){
   if (state.calcMode === 'existing') return Math.max(load, breaker);
   return load;
 }
-function rackWidthFor(outerDiameter, count){
-  if (!outerDiameter || !count) return '';
-  const occupied = outerDiameter * count * 1.35;
-  return `W${RACK_WIDTHS.find(v=>v>=occupied) || RACK_WIDTHS.at(-1)}`;
+function rackReferenceFor(outerDiameter,count,cableMassKgM){
+  if(!outerDiameter||!count)return '';
+  const requiredWidth=Number(outerDiameter)*Number(count)/0.8;
+  const selected=rackCandidates('P').filter(item=>item.width>=requiredWidth).find(item=>{
+    const designMass=Number(cableMassKgM||0)+item.massKgM;
+    return item.allowableKgM&&designMass/item.allowableKgM*100<=80;
+  });
+  return selected?`${selected.code}（W${selected.width}）`:'選定範囲外';
 }
 
 function candidateFromSize(type, size, breakerCurrent, preferManualAmpacity=false){
@@ -1187,7 +1217,7 @@ function missingFields(){
     pushIf(!state.voltage || Number(state.voltage) <= 0, isCustomVoltage() ? '任意電圧を入力してください。' : '電圧を選択してください。', isCustomVoltage() ? 'voltageCustom' : 'voltage');
   pushIf(!state.powerFactor, '力率を選択してください。', 'powerFactor');
   if (!isLightingCalc()) pushIf(!state.efficiency, '効率を選択してください。', 'efficiency');
-  pushIf(!state.wiringLength, '配線長を入力してください。', 'wiringLength');
+  pushIf(!Number.isFinite(Number(state.wiringLength)) || Number(state.wiringLength) <= 0, '配線長は0より大きい数値で入力してください。', 'wiringLength');
   if (state.calcMode === 'existing') pushIf(!state.existingBreaker, '既設開閉器を選択してください。', 'existingBreaker');
   if (state.calcMode !== 'existing') pushIf(!state.breakerMarginRatio, '開閉器裕度設定を選択してください。', 'breakerMarginRatio');
   pushIf(!state.loadCount, '負荷数を選択してください。', 'loadCount');
@@ -1197,7 +1227,7 @@ function missingFields(){
   pushIf(!state.cableSizingMode, 'ケーブルサイズ選定を選択してください。', 'cableSizingMode');
   if (state.cableSizingMode === 'manual') {
     pushIf(!state.cableSize, '手動判定ケーブルサイズを選択してください。', 'cableSize');
-    pushIf(!state.baseAmpacity, '基準許容電流を入力してください。', 'baseAmpacity');
+    pushIf(!Number.isFinite(Number(state.baseAmpacity)) || Number(state.baseAmpacity) <= 0, '基準許容電流は0より大きい数値で入力してください。', 'baseAmpacity');
   }
   pushIf(!state.installationMethod, '敷設方法を選択してください。', 'installationMethod');
   pushIf(!state.layingCondition, '敷設条件を選択してください。', 'layingCondition');
@@ -1206,8 +1236,12 @@ function missingFields(){
   state.loads.forEach((load,index)=>{
     if (!load.name) missing.push({label:`負荷${index+1}の負荷名称を入力してください。`, id:`load-name-${load.id}`});
     if (!load.inputType) missing.push({label:`負荷${index+1}の入力方式を選択してください。`, id:`load-type-${load.id}`});
-    if (load.value === '' || load.value === null || load.value === undefined) missing.push({label:`負荷${index+1}の負荷値を入力してください。`, id:`load-value-${load.id}`});
+    if (!Number.isFinite(Number(load.value)) || Number(load.value) <= 0) missing.push({label:`負荷${index+1}の負荷値は0より大きい数値で入力してください。`, id:`load-value-${load.id}`});
   });
+  const totalCurrent=getLoadSummary().totalCurrent;
+  if(Number.isFinite(totalCurrent)&&totalCurrent>MAX_BREAKER_CURRENT) missing.push({label:`合計電流が本アプリの選定上限${MAX_BREAKER_CURRENT}Aを超えています。回路分割または個別設計を行ってください。`,id:'loadCount'});
+  const ratio=Number(state.breakerMarginRatio||0.8),marginBasis=ratio>0?totalCurrent/ratio:Infinity;
+  if(state.calcMode!=='existing'&&Number.isFinite(marginBasis)&&marginBasis>MAX_BREAKER_CURRENT) missing.push({label:`開閉器裕度反映後の必要電流が選定上限${MAX_BREAKER_CURRENT}Aを超えています。裕度設定・回路分割または個別設計を見直してください。`,id:'breakerMarginRatio'});
   return missing;
 }
 function clearInputErrors(){ document.querySelectorAll('.input-error').forEach(el=>el.classList.remove('input-error')); }
@@ -1323,12 +1357,12 @@ function cableMetrics(candidate){
   const type = candidate?.type || selectedCableTypeFromState();
   const coreCount = cableCoreCount(type);
   const massKgMPerCoreOrCable = info?.massKgKm ? Number(info.massKgKm) / 1000 : 0;
-  const massKgM = massKgMPerCoreOrCable * coreCount;
   const wiringLength = Number(state.wiringLength || 0);
   const parallel = Number(state.parallelCount || 1);
   const totalRunCount = coreCount * parallel;
+  const massKgM = massKgMPerCoreOrCable * totalRunCount;
   const massTotalKg = massKgMPerCoreOrCable && wiringLength ? massKgMPerCoreOrCable * wiringLength * totalRunCount : 0;
-  const rackWidth = info?.outerDiameter ? rackWidthFor(Number(info.outerDiameter), totalRunCount) : '-';
+  const rackWidth = info?.outerDiameter ? rackReferenceFor(Number(info.outerDiameter), totalRunCount, massKgM) : '-';
   return { massKgM, massTotalKg, rackWidth, coreCount, totalRunCount };
 }
 
@@ -1619,7 +1653,7 @@ function renderLoadCards(){
   if (!state.loads.length) { root.innerHTML = '<div class="load-card muted">負荷数を選択してください。</div>'; return; }
   state.loads.forEach((load,index)=>{
     const card = document.createElement('div'); card.className = 'load-card';
-    card.innerHTML = `<div class="row"><strong>${escapeHtml(load.title)}</strong><span class="muted">${index+1} / ${state.loads.length}</span></div><div class="grid two top-gap"><label><span>負荷名称</span><input id="load-name-${load.id}" type="text" value="${escapeHtml(load.name)}" /></label><label><span>入力方式</span><select id="load-type-${load.id}"></select></label><label><span>負荷値</span><input id="load-value-${load.id}" type="number" inputmode="decimal" value="${load.value === '' ? '' : escapeHtml(load.value)}" /></label><div class="readonly-box compact-box"><span>入力方式</span><strong id="load-type-label-${load.id}">${escapeHtml(load.inputType || '-')}</strong></div></div><div class="readonly-grid top-gap"><div><span>${formulaTriggerHtml('current','換算電流 [A]', load.inputType, `load-${load.id}-current`)}</span><strong id="load-current-${load.id}">${formatNumber(currentForLoad(load),2)}</strong></div><div><span>${formulaTriggerHtml('kw','換算容量 [kW]', load.inputType, `load-${load.id}-kw`)}</span><strong id="load-kw-${load.id}">${formatNumber(kwForLoad(load),3)}</strong></div><div><span>${formulaTriggerHtml('kva','換算容量 [kVA]', load.inputType, `load-${load.id}-kva`)}</span><strong id="load-kva-${load.id}">${formatNumber(kvaForLoad(load),3)}</strong></div></div>`;
+    card.innerHTML = `<div class="row"><strong>${escapeHtml(load.title)}</strong><span class="muted">${index+1} / ${state.loads.length}</span></div><div class="grid two top-gap"><label><span>負荷名称</span><input id="load-name-${load.id}" type="text" value="${escapeHtml(load.name)}" /></label><label><span>入力方式</span><select id="load-type-${load.id}"></select></label><label><span>負荷値</span><input id="load-value-${load.id}" type="number" inputmode="decimal" min="0.001" step="0.001" value="${load.value === '' ? '' : escapeHtml(load.value)}" /></label><div class="readonly-box compact-box"><span>入力方式</span><strong id="load-type-label-${load.id}">${escapeHtml(load.inputType || '-')}</strong></div></div><div class="readonly-grid top-gap"><div><span>${formulaTriggerHtml('current','換算電流 [A]', load.inputType, `load-${load.id}-current`)}</span><strong id="load-current-${load.id}">${formatNumber(currentForLoad(load),2)}</strong></div><div><span>${formulaTriggerHtml('kw','換算容量 [kW]', load.inputType, `load-${load.id}-kw`)}</span><strong id="load-kw-${load.id}">${formatNumber(kwForLoad(load),3)}</strong></div><div><span>${formulaTriggerHtml('kva','換算容量 [kVA]', load.inputType, `load-${load.id}-kva`)}</span><strong id="load-kva-${load.id}">${formatNumber(kvaForLoad(load),3)}</strong></div></div>`;
     root.appendChild(card);
     const nameInput = document.getElementById(`load-name-${load.id}`), typeSelect = document.getElementById(`load-type-${load.id}`), valueInput = document.getElementById(`load-value-${load.id}`);
     setSelectOptions(typeSelect, ['kW','A','kVA'], '選択してください', load.inputType);
@@ -2451,7 +2485,7 @@ function downloadExcel(){
   const r = state.lastResult;
   const summaryRows = outputRows();
   const loadRows = r.loadDetails.map((load,index)=>[index+1, load.name, load.inputType, load.value, formatNumber(load.current,2), formatNumber(load.kw,3), formatNumber(load.kva,3)]);
-  const html = `<html><head><meta charset="utf-8"><style>body{font-family:"Yu Gothic",Meiryo,sans-serif;}table{border-collapse:collapse;margin-bottom:18px;}th,td{border:1px solid #999;padding:6px 8px;mso-number-format:"\\@";}th{background:#eaf2ff;}.note{color:#c00;font-weight:bold;}</style></head><body><h1>低圧幹線計算 結果表</h1><p class="note">本帳票は参考資料です。内線規定・関係法令・現場仕様・機器仕様を確認し、最終判断は利用者責任で行ってください。</p><h2>計算結果</h2><table>${summaryRows.map(row=>`<tr><th>${excelSafe(row[0])}</th><td>${excelSafe(row[1])}</td></tr>`).join('')}</table><h2>負荷一覧</h2><table><tr><th>No</th><th>負荷名称</th><th>入力方式</th><th>負荷値</th><th>換算電流[A]</th><th>換算容量[kW]</th><th>換算容量[kVA]</th></tr>${loadRows.map(row=>`<tr>${row.map(cell=>`<td>${excelSafe(cell)}</td>`).join('')}</tr>`).join('')}</table><h2>施工参考メモ</h2><table>${r.constructionNotes.map(note=>`<tr><td>${excelSafe(note)}</td></tr>`).join('')}</table><h2>根拠メモ</h2><table>${r.rootMemo.map(note=>`<tr><td>${excelSafe(note)}</td></tr>`).join('')}</table></body></html>`;
+  const html = `<html><head><meta charset="utf-8"><style>body{font-family:"Yu Gothic",Meiryo,sans-serif;}table{border-collapse:collapse;margin-bottom:18px;}th,td{border:1px solid #999;padding:6px 8px;mso-number-format:"\\@";}th{background:#eaf2ff;}.note{color:#c00;font-weight:bold;}</style></head><body><h1>低圧幹線計算 結果表</h1><p class="note">本帳票は参考資料です。内線規程・関係法令・現場仕様・機器仕様を確認し、最終判断は利用者責任で行ってください。</p><h2>計算結果</h2><table>${summaryRows.map(row=>`<tr><th>${excelSafe(row[0])}</th><td>${excelSafe(row[1])}</td></tr>`).join('')}</table><h2>負荷一覧</h2><table><tr><th>No</th><th>負荷名称</th><th>入力方式</th><th>負荷値</th><th>換算電流[A]</th><th>換算容量[kW]</th><th>換算容量[kVA]</th></tr>${loadRows.map(row=>`<tr>${row.map(cell=>`<td>${excelSafe(cell)}</td>`).join('')}</tr>`).join('')}</table><h2>施工参考メモ</h2><table>${r.constructionNotes.map(note=>`<tr><td>${excelSafe(note)}</td></tr>`).join('')}</table><h2>根拠メモ</h2><table>${r.rootMemo.map(note=>`<tr><td>${excelSafe(note)}</td></tr>`).join('')}</table></body></html>`;
   const blob = new Blob(['\ufeff' + html], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${state.projectName || 'feeder_calc'}_${Date.now()}.xls`; a.click(); URL.revokeObjectURL(url);
 }
@@ -2477,7 +2511,7 @@ function runDisclaimer(){
   $('disclaimerTitle').textContent = '免責事項';
   $('disclaimerBody').textContent = '本Webアプリおよび帳票出力内容は参考資料です。計算結果は現場条件・仕様・関係法令により変わります。';
   $('disclaimerDialog').showModal();
-  $('disclaimerNextBtn').onclick = ()=>{ if (disclaimerStep === 1) { disclaimerStep = 2; $('disclaimerTitle').textContent = '重要な確認'; $('disclaimerBody').textContent = '最終判断は利用者責任で行ってください。内線規定、関係法令、現場条件、機器仕様、保護協調等を必ず確認してください。'; } else { localStorage.setItem(STORAGE.disclaimer,'accepted'); $('disclaimerDialog').close(); } };
+  $('disclaimerNextBtn').onclick = ()=>{ if (disclaimerStep === 1) { disclaimerStep = 2; $('disclaimerTitle').textContent = '重要な確認'; $('disclaimerBody').textContent = '最終判断は利用者責任で行ってください。内線規程、関係法令、現場条件、機器仕様、保護協調等を必ず確認してください。'; } else { localStorage.setItem(STORAGE.disclaimer,'accepted'); $('disclaimerDialog').close(); } };
 }
 function registerSW(){ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
 function init(){ ensureDocsUpgraded(); bindEvents(); initConduitCalculator(); initRackCalculator(); applySettingsValues(); renderAll(); switchScreen('calc'); switchSavedTab('history'); runDisclaimer(); registerSW(); }

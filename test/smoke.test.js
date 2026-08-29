@@ -74,7 +74,16 @@ function rackTestApi() {
           .filter(item => item.width >= width && (direction === 'eps' ? item.type === 'QR' : true) && (!cover || item.height >= maxDiameter))
           .map(item => ({...item, utilization:(cableMass + item.massKgM + coverMass) / item.allowableKgM * 100}));
         return candidates.find(item => direction !== 'horizontal' || (item.allowableKgM && item.utilization <= limit));
-      }
+      },
+      breakerCheck: (loadCurrent, ratio='1.0') => {
+        state.calculationType='power'; state.calcMode='auto'; state.powerSystem='3φ3W'; state.voltage='400'; state.powerFactor='1.0'; state.efficiency='1.0';
+        state.wiringLength='10'; state.breakerMarginRatio=ratio; state.loadCount='1'; state.loads=[{id:'audit',name:'監査',inputType:'A',value:String(loadCurrent)}];
+        applyCableTypeToState('CVT'); state.cableSizingMode='auto'; state.installationMethod='気中'; state.layingCondition='一般'; state.ambientTemperature='40'; state.parallelCount='1';
+        return {required:requiredBreakerFromLoad(),recommended:recommendedBreakerFromMargin(),messages:missingFields().map(item=>item.label)};
+      },
+      protectiveSizes: type => rackCableSizes(type),
+      allRackMasses: () => rackCableTypes().flatMap(type=>rackCableSizes(type).map(size=>({type,size,mass:rackReferenceMassKgM(type,size),source:rackMassSource(type,size)}))),
+      rackReference: (diameter,count,mass) => rackReferenceFor(diameter,count,mass)
     };
   `;
   vm.createContext(context);
@@ -100,4 +109,21 @@ test('rack selection covers width, load, finish and EPS boundaries', () => {
   assert.equal(pick({ width: 180, cableMass: 5, direction: 'eps' }).code, 'QR20');
   assert.equal(pick({ finish: 'SD', width: 550, cableMass: 5 }).code, 'SD-SR60');
   assert.equal(pick({ finish: 'S', width: 1100, cableMass: 5 }), undefined);
+});
+
+test('breaker selection stops instead of rounding loads above 800A down to 800A', () => {
+  const { breakerCheck } = rackTestApi();
+  assert.equal(breakerCheck(800).required, 800);
+  assert.equal(breakerCheck(801).required, null);
+  assert.equal(breakerCheck(700, '0.8').recommended, null);
+  assert.ok(breakerCheck(801).messages.some(message => message.includes('800A')));
+});
+
+test('protective cable sizes and rack mass references cover audited gaps', () => {
+  const api = rackTestApi();
+  assert.deepEqual(Array.from(api.protectiveSizes('CV-2C')).slice(-2), [400,500]);
+  assert.deepEqual(Array.from(api.protectiveSizes('CV-3C')).slice(-2), [400,500]);
+  assert.deepEqual(Array.from(api.protectiveSizes('CV-4C')).slice(-5), [200,250,325,400,500]);
+  assert.ok(api.allRackMasses().every(item => Number.isFinite(item.mass) && item.mass > 0));
+  assert.match(api.rackReference(17, 1, 0.59), /^SR20（W200）$/);
 });
