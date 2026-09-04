@@ -1,4 +1,4 @@
-import {isSunday,isSaturday,isJapanHoliday,fmtMinutes} from './logic.mjs?v=075';
+import {isSunday,isSaturday,isJapanHoliday,fmtMinutes} from './logic.mjs?v=076';
 
 export const STANDARD_DAILY_MINUTES=8*60;
 
