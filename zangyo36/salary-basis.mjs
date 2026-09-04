@@ -11,7 +11,7 @@ export function computeWageBase(baseSalary,allowances=[]){
 function yen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(Math.round(Number(n)||0));}
 function uid(){return crypto.randomUUID?.()||`a-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;}
 function request(r){return new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});}
-function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open('zangyo36_db',2);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});}
+function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open('zangyo36_db',3);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});}
 async function loadStored(){
   const db=await openDB();
   try{return await request(db.transaction('extras').objectStore('extras').get(KEY));}
@@ -125,6 +125,7 @@ function recalculate(){
   if($('#wageBasisTotal'))$('#wageBasisTotal').textContent=yen(total);
   if($('#wageBasisHourly'))$('#wageBasisHourly').textContent=hours?yen(total/hours):'—';
   if($('#wageBasisWarning'))$('#wageBasisWarning').textContent=state.legacyWarning;
+  window.dispatchEvent(new CustomEvent('tokimate:wagebasischange',{detail:{baseMonthly:total,hours}}));
 }
 
 async function init(){
