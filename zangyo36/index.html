@@ -1,83 +1,139 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#ffffff"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>残業・36協定管理</title>
-<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102a56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>RecoLife 勤怠・給与アシスタント</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header><div class="head"><div><div class="title">残業・36協定管理</div><div class="sub">端末内保存 / オフライン対応PWA v0.5.1</div></div><span id="saveState" class="status ok">保存済み</span></div></header>
-<nav>
-<button class="tabbtn active" data-tab="today">1 本日</button><button class="tabbtn" data-tab="monthly">2 月間</button><button class="tabbtn" data-tab="wage">3 賃金・修正</button><button class="tabbtn" data-tab="settings">4 設定</button>
+<body data-theme="navy">
+<header class="appbar">
+  <div class="brand"><div class="brandmark">R</div><div><strong>RecoLife</strong><small>勤怠・給与アシスタント v0.6</small></div></div>
+  <span id="saveState" class="pill ok">保存済み</span>
+</header>
+<nav class="tabs">
+  <button class="tabbtn active" data-tab="today">本日</button>
+  <button class="tabbtn" data-tab="monthly">月間</button>
+  <button class="tabbtn" data-tab="payroll">給与</button>
+  <button class="tabbtn" data-tab="fun">キャラ</button>
+  <button class="tabbtn" data-tab="settings">設定</button>
 </nav>
 <main>
-<section class="tab active" id="tab-today"><div class="grid">
-  <div class="card span12 today-card">
-    <div id="todayDate" class="today-date">--</div>
-    <div id="liveClock" class="live-clock">--:--</div>
-    <div id="activeShiftNotice" class="note hidden"></div>
-    <div class="punch-grid">
-      <button id="clockInBtn" class="punch-btn punch-in" type="button" aria-label="長押しで出勤打刻">
-        <span class="punch-title">出勤</span><span id="clockInTime" class="punch-time">未打刻</span><span class="punch-guide">長押しで打刻</span><span class="hold-progress"></span>
-      </button>
-      <button id="clockOutBtn" class="punch-btn punch-out" type="button" aria-label="長押しで退勤打刻">
-        <span class="punch-title">退勤</span><span id="clockOutTime" class="punch-time">未打刻</span><span class="punch-guide">長押しで打刻</span><span class="hold-progress"></span>
-      </button>
+<section id="tab-today" class="tab active">
+  <div class="hero card">
+    <div class="hero-main">
+      <div class="dateblock"><div id="todayDate" class="today-date">--</div><div id="liveClock" class="clock">--:--:--</div></div>
+      <div id="activeShiftNotice" class="notice hidden"></div>
+      <div class="punch-grid">
+        <button id="clockInBtn" class="punch in" type="button"><span>出勤</span><b id="clockInTime">未打刻</b><small>長押しで打刻</small><i></i></button>
+        <button id="clockOutBtn" class="punch out" type="button"><span>退勤</span><b id="clockOutTime">未打刻</b><small>長押しで打刻</small><i></i></button>
+      </div>
+      <div id="todayPunchMessage" class="helper">約0.8秒長押しで現在時刻を記録します。</div>
+      <div class="quick-actions">
+        <button id="editToday" class="soft">本日の詳細</button>
+        <button id="fortuneBtn" class="fortune-btn">🎋 今日のおみくじ</button>
+        <button id="openChat" class="soft">💬 <span id="chatName">しおり</span>に聞く</button>
+      </div>
     </div>
-    <div id="todayPunchMessage" class="help center" style="margin-top:10px">ボタンを約0.8秒長押しすると現在時刻で打刻します。</div>
-    <div class="actions center-actions" style="margin-top:12px"><button id="editToday" class="secondary" type="button">本日の詳細を編集</button></div>
+    <aside class="assistant-card">
+      <div class="avatar-wrap"><img id="heroCharacter" src="characters/shiori.jpg" alt="しおり"><span id="equippedBadge" class="equip-badge hidden"></span></div>
+      <div class="speech"><strong id="heroName">しおり</strong><p id="heroMessage">おはようございます。今日も無理のない勤務でいきましょう。</p></div>
+    </aside>
   </div>
 
-  <div class="card span12"><h2>今月の状況</h2><div class="kpis"><div class="kpi"><span class="label">時間外</span><strong id="mOt">0:00</strong></div><div class="kpi"><span class="label">休日</span><strong id="mHoliday">0:00</strong></div><div class="kpi"><span class="label">時間外+休日</span><strong id="mCombined">0:00</strong></div><div class="kpi"><span class="label">45h超回数</span><strong id="mOver45">0/6</strong></div></div>
-    <div style="margin-top:14px"><div class="label">現在条件から見た残業可能時間の目安</div><div id="remaining" class="metric">--</div><div id="remainingReason" class="help">--</div></div>
-    <div id="breachBox" class="note dangerbox hidden" style="margin-top:12px"></div>
-    <div class="help" style="margin-top:10px">※「残り」は36協定上限のうち最も厳しい条件から機械的に算定した目安です。会社の36協定・就業規則・特別条項の発動条件を優先してください。</div>
+  <div class="grid four">
+    <div class="metric-card"><span>実労働</span><b id="mActual">0:00</b></div>
+    <div class="metric-card"><span>法定時間外</span><b id="mOt">0:00</b></div>
+    <div class="metric-card"><span>深夜</span><b id="mDeep">0:00</b></div>
+    <div class="metric-card"><span>日曜勤務</span><b id="mHoliday">0:00</b></div>
   </div>
-</div></section>
 
-<section class="tab" id="tab-monthly"><div class="grid">
-  <div class="card span12"><div class="month-head"><div><h2 style="margin-bottom:3px">月間勤務シート</h2><div class="help">日付欄をタップすると、その日の詳細入力・修正ができます。</div></div><select id="monthlyMonth" style="width:auto"></select></div></div>
-  <div class="card span12"><div class="kpis"><div class="kpi"><span class="label">時間外</span><strong id="sOt">0:00</strong></div><div class="kpi"><span class="label">時間外＋休日</span><strong id="sCombined">0:00</strong></div><div class="kpi"><span class="label">年間時間外</span><strong id="sAnnual">0:00</strong></div><div class="kpi"><span class="label">45h超の月</span><strong id="sCount">0/6</strong></div></div></div>
-  <div class="card span12">
-    <div class="tablewrap monthly-wrap"><table class="monthly-table"><thead><tr><th>日</th><th>曜</th><th>出勤</th><th>退勤</th><th>実働</th><th>時間外</th><th>深夜</th><th>区分</th></tr></thead><tbody id="dailyRows"></tbody></table></div>
+  <div class="grid two">
+    <div class="card"><h2>フレックス清算</h2><div class="flexbar"><div><span>今月の法定総枠</span><b id="flexLimit">--</b></div><div><span>総枠まで</span><b id="flexRemaining">--</b></div></div><div class="bar"><span id="flexProgress"></span></div><p class="helper">毎月1日〜末日の1か月清算。1日8時間超だけでは法定時間外にしません。</p></div>
+    <div class="card"><h2>36協定</h2><div class="big" id="remaining36">--</div><div id="remaining36Reason" class="helper">--</div><div id="breachBox" class="notice danger hidden"></div></div>
   </div>
-  <div id="dayDetailCard" class="card span12 hidden"><div class="detail-head"><div><h2 id="detailTitle">勤務詳細</h2><div id="detailHint" class="help"></div></div><button id="closeDetail" class="secondary" type="button">閉じる</button></div>
-    <form id="dayDetailForm"><div class="formgrid">
-      <div><label>勤務日</label><input id="detailDate" type="date" readonly></div><div><label>区分</label><select id="detailWorkType"><option value="normal">通常勤務</option><option value="legalHoliday">法定休日勤務</option></select></div>
-      <div><label>始業</label><input id="detailStart" type="time"></div><div><label>終業</label><input id="detailEnd" type="time"></div>
-      <div><label>実際の休憩 合計（分）</label><input id="detailBreakMinutes" type="number" min="0" step="1"><div class="help">始業・終業変更時は会社規定を自動入力。実際と異なる場合は修正可。</div></div>
+
+  <div class="card point-card"><div><h2>ワークライフポイント</h2><div class="point-line"><b id="pointsBalance">0</b><span>pt</span></div><div class="helper">今月の獲得見込み：<b id="pointEstimate">0 pt</b>（月末確定後に付与）</div></div><button class="soft" data-tabjump="fun">交換所へ</button></div>
+</section>
+
+<section id="tab-monthly" class="tab">
+  <div class="card month-head"><div><h2>月間勤務シート</h2><p class="helper">日付をタップすると詳細編集。日曜＝公休、土曜・祝日＝特休を初期表示します。</p></div><select id="monthlyMonth"></select></div>
+  <div class="grid four">
+    <div class="metric-card"><span>実労働</span><b id="sActual">0:00</b></div>
+    <div class="metric-card"><span>法定総枠</span><b id="sLimit">0:00</b></div>
+    <div class="metric-card"><span>法定時間外</span><b id="sOt">0:00</b></div>
+    <div class="metric-card"><span>日曜勤務</span><b id="sHoliday">0:00</b></div>
+  </div>
+  <div class="card tablewrap"><table class="monthly-table"><thead><tr><th>日</th><th>曜</th><th>種別</th><th>出勤</th><th>退勤</th><th>実働</th><th>深夜</th></tr></thead><tbody id="dailyRows"></tbody></table></div>
+  <div id="dayDetailCard" class="card hidden">
+    <div class="detail-head"><div><h2 id="detailTitle">勤務詳細</h2><p class="helper">レコルの勤務区分に近い形で記録します。</p></div><button id="closeDetail" class="soft">閉じる</button></div>
+    <form id="dayDetailForm" class="formgrid">
+      <div><label>勤務日</label><input id="detailDate" type="date" readonly></div>
+      <div><label>勤務種別</label><select id="detailWorkType"></select></div>
+      <div><label>出勤</label><input id="detailStart" type="time"></div>
+      <div><label>退勤</label><input id="detailEnd" type="time"></div>
+      <div><label>実際の休憩（分）</label><input id="detailBreakMinutes" type="number" min="0"></div>
       <div><label>会社規定休憩（自動）</label><input id="detailCompanyBreak" type="number" readonly></div>
       <div><label>法定最低休憩（参考）</label><input id="detailStatutoryBreak" type="number" readonly></div>
-      <div><label>うち深夜帯 22:00〜翌5:00 の休憩（分）</label><input id="detailNightBreak" type="number" min="0" step="1"></div>
-      <div class="full"><label>メモ（任意）</label><input id="detailMemo" maxlength="80" placeholder="現場名などは必要な場合のみ"></div>
-      <div class="full actions"><button class="primary" type="submit">この日の勤務を保存</button><button id="deleteDay" class="dangerbtn" type="button">この日の勤務を削除</button></div>
-    </div></form>
+      <div><label>うち22:00〜翌5:00の休憩（分）</label><input id="detailNightBreak" type="number" min="0"></div>
+      <div class="full"><label>メモ</label><input id="detailMemo" maxlength="100" placeholder="例：代休、現場名など"></div>
+      <div class="full actions"><button type="submit" class="primary">保存</button><button id="deleteDay" type="button" class="dangerbtn">削除</button></div>
+    </form>
   </div>
-  <div class="card span6"><h2>2〜6か月平均</h2><div id="avgList" class="kpis"></div></div>
-  <div class="card span6"><h2>36協定判定</h2><div class="help">36協定期間：<span id="periodText"></span></div><div id="statusSummary" class="note" style="margin-top:10px">データを入力すると判定します。</div></div>
-  <div class="card span12"><h2>36協定期間の月別一覧</h2><div class="tablewrap"><table><thead><tr><th>月</th><th>時間外</th><th>法定休日</th><th>合計</th><th>深夜時間外</th><th>判定</th></tr></thead><tbody id="monthRows"></tbody></table></div></div>
-</div></section>
+  <div class="grid two">
+    <div class="card"><h2>2〜6か月平均</h2><div id="avgList" class="mini-grid"></div></div>
+    <div class="card"><h2>36協定判定</h2><div id="statusSummary" class="notice">データを入力すると判定します。</div></div>
+  </div>
+</section>
 
-<section class="tab" id="tab-wage"><div class="grid">
-  <div class="card span12"><div class="month-head"><div><h2 style="margin-bottom:3px">賃金概算・給与明細照合</h2><div class="help">概算用。実際の割増賃金算定基礎は会社の賃金規程・対象手当により異なります。</div></div><select id="wageMonth" style="width:auto"></select></div></div>
-  <div class="card span4"><div class="label">割増計算用 時給</div><div id="hourly" class="metric small">¥0</div><div class="help">算定基礎月額 ÷ 月平均所定労働時間</div></div>
-  <div class="card span4"><div class="label">時間外等手当 概算</div><div id="wageTotal" class="metric small">¥0</div><div class="help">時間外・深夜・法定休日を合算</div></div>
-  <div class="card span4"><div class="label">うち割増相当額</div><div id="premiumOnly" class="metric small">¥0</div><div class="help">25%/35%/50%等の上乗せ部分</div></div>
-  <div class="card span6"><h2>内訳</h2><div id="wageBreakdown" class="help"></div></div>
-  <div class="card span6"><h2>給与明細との照合</h2><div class="formgrid"><div><label>会社明細の時間外・深夜・休日手当 合計</label><input id="actualAllowance" type="number" min="0" step="1" placeholder="例 128500"></div><div><label>差額</label><input id="allowanceDiff" readonly></div><div class="full actions"><button id="savePayslip" class="primary" type="button">明細額を保存</button></div></div></div>
-  <div class="card span12"><h2>算定修正</h2><div class="note warnbox" style="margin-bottom:10px">自動算定が実勤務と異なる日だけ修正してください。特に夜勤・休憩位置・変形労働時間制などでは自動算定と一致しない場合があります。</div><div class="tablewrap"><table><thead><tr><th>日付</th><th>自動/現在 時間外(分)</th><th>深夜時間外(分)</th><th>法定休日(分)</th><th>休日深夜(分)</th><th>所定内深夜(分)</th><th></th></tr></thead><tbody id="correctionRows"></tbody></table></div></div>
-</div></section>
+<section id="tab-payroll" class="tab">
+  <div class="card month-head"><div><h2>給与・割増賃金の自己検算</h2><p class="helper">1日〜末日を清算し、翌月25日支給の確認用。</p></div><select id="wageMonth"></select></div>
+  <div class="grid four">
+    <div class="metric-card"><span>計算用時給</span><b id="hourly">¥0</b></div>
+    <div class="metric-card"><span>法定時間外</span><b id="payOt">0:00</b></div>
+    <div class="metric-card"><span>手当概算</span><b id="wageTotal">¥0</b></div>
+    <div class="metric-card"><span>割増相当額</span><b id="premiumOnly">¥0</b></div>
+  </div>
+  <div class="grid two">
+    <div class="card"><h2>内訳</h2><div id="wageBreakdown" class="breakdown"></div></div>
+    <div class="card"><h2>給与明細との照合</h2><label>会社明細の時間外・深夜・休日手当 合計</label><input id="actualAllowance" type="number" min="0"><label>差額</label><input id="allowanceDiff" readonly><button id="savePayslip" class="primary">明細額を保存</button></div>
+  </div>
+  <div class="card notice warn"><strong>注意</strong><br>給与規程・各種手当・欠勤控除など会社独自ルールで実額は変わります。本画面は自己検算用です。</div>
+</section>
 
-<section class="tab" id="tab-settings"><div class="grid">
-  <div class="card span6"><h2>給与計算設定</h2><div class="formgrid"><div><label>基本給（月額）</label><input id="baseSalary" type="number" min="0" step="1000"></div><div><label>割増賃金の算定基礎月額</label><input id="wageBaseMonthly" type="number" min="0" step="1000" placeholder="未入力なら基本給を使用"></div><div><label>月平均所定労働時間</label><input id="avgMonthlyScheduledHours" type="number" min="1" step="0.1"></div><div><label>1日の法定時間（通常）</label><input id="dailyLegalHours" type="number" min="1" step="0.5"></div></div><div class="help" style="margin-top:10px">※割増賃金の基礎には、基本給以外の手当が含まれる場合があります。給与明細照合は参考値として使用してください。</div></div>
-  <div class="card span6"><h2>36協定設定</h2><div class="formgrid"><div><label>36協定の起算月</label><select id="agreementStartMonth"></select></div><div><label>週の法定時間</label><input id="weeklyLegalHours" type="number" min="1" step="0.5"></div><div class="full"><label class="checkline"><input id="weekStartsMonday" type="checkbox">週の起算を月曜日として集計</label></div><div class="full"><label class="checkline"><input id="disasterRestoration" type="checkbox">災害時の復旧・復興工事として100h/80h平均の特例を適用</label></div></div></div>
-  <div class="card span12"><div class="actions"><button id="saveSettings" class="primary">設定を保存</button><span id="storageState" class="status warn">保存状態確認中</span><button id="requestPersist" class="secondary">永続ストレージを要求</button></div></div>
-  <div class="card span6"><h2>バックアップ</h2><div class="formgrid"><div class="full"><label>バックアップ暗号化パスワード（任意）</label><input id="backupPassword" type="password" autocomplete="new-password" placeholder="設定するとAES-GCMで暗号化"></div><div class="full actions"><button id="exportBackup" class="primary" type="button">端末へバックアップを書き出す</button><label class="secondary" style="cursor:pointer">バックアップから復元<input id="importBackup" type="file" accept=".json,.zgbak,application/json" hidden></label></div></div><div class="help" style="margin-top:10px">iPhoneでは保存先を「このiPhone内」、Androidでは端末のDownloads/Documents等にすると、ブラウザのWebデータ削除とは別に保管できます。</div></div>
-  <div class="card span6"><h2>データ管理</h2><div class="actions"><button id="clearAll" class="dangerbtn" type="button">勤務データを全削除</button></div><div class="help" style="margin-top:10px">この操作は端末内の勤務データを削除します。端末本体へ書き出したバックアップファイルは削除しません。</div></div>
-  <div class="card span12"><div class="note"><strong>休憩基準（試作版）</strong><br>会社規定：6時間未満45分、6時間以上60分を自動入力。法定最低：労働時間が6時間を超える場合45分以上、8時間を超える場合60分以上（労基法34条）。建設業（災害復旧・復興を除く）：原則 月45h・年360h、特別条項でも年720h、時間外+休日 単月100h未満・2〜6か月平均80h以内、45h超は年6か月まで。深夜22:00〜翌5:00は25%以上、法定休日35%以上、月60h超の法定時間外は50%以上。会社の36協定・就業規則がこれより厳しい場合は会社基準を優先してください。</div></div>
-</div></section>
-<div class="footer">このアプリは勤怠・給与の自己確認用の試作ツールです。労働時間の確定、給与計算、法令適合性を保証するものではありません。法定休日の指定、変形労働時間制、フレックスタイム制、代替休暇等は別途確認が必要です。</div>
+<section id="tab-fun" class="tab">
+  <div class="card"><h2>キャラクター</h2><p class="helper">キャラクターの顔・髪型・雰囲気は確定デザインを使用します。</p><div id="characterGrid" class="character-grid"></div></div>
+  <div class="grid two">
+    <div class="card"><h2>ポイント交換所</h2><div class="point-line"><b id="shopPoints">0</b><span>pt</span></div><div id="shopGrid" class="shop-grid"></div></div>
+    <div class="card"><h2>装備中</h2><div class="equipped-preview"><img id="shopCharacter" src="characters/shiori.jpg"><div><strong id="shopCharacterName">しおり</strong><p id="equippedText">アイテムなし</p><button id="unequipBtn" class="soft">装備を外す</button></div></div><p class="helper">購入済みアイテムは何度でも付け替えできます。</p></div>
+  </div>
+</section>
+
+<section id="tab-settings" class="tab">
+  <div class="grid two">
+    <div class="card"><h2>勤務設定</h2><div class="formgrid"><div><label>フレックス清算</label><input value="毎月1日〜末日" readonly></div><div><label>法定休日</label><input value="日曜日" readonly></div><div><label>給与支給日</label><input value="翌月25日" readonly></div><div><label>36協定 起算月</label><select id="agreementStartMonth"></select></div><div class="full"><label>追加の勤務種別（カンマ区切り）</label><input id="customWorkTypes" placeholder="例：育休,介護休"></div></div></div>
+    <div class="card"><h2>給与設定</h2><div class="formgrid"><div><label>基本給（月額）</label><input id="baseSalary" type="number" min="0" step="1000"></div><div><label>割増賃金の算定基礎月額</label><input id="wageBaseMonthly" type="number" min="0" step="1000"></div><div><label>月平均所定労働時間</label><input id="avgMonthlyScheduledHours" type="number" min="1" step="0.1"></div></div></div>
+    <div class="card"><h2>表示・キャラクター</h2><div class="formgrid"><div><label>テーマ色</label><select id="themeSelect"><option value="navy">ネイビー</option><option value="blue">ブルー</option><option value="green">グリーン</option><option value="rose">ローズ</option><option value="dark">ダーク</option></select></div><div><label>初期キャラクター</label><select id="characterSelect"></select></div><div><label>長押し時間</label><select id="holdMs"><option value="600">0.6秒</option><option value="800">0.8秒</option><option value="1000">1.0秒</option></select></div><div class="check"><input id="soundEnabled" type="checkbox"><label for="soundEnabled">効果音ON</label></div><div class="check"><input id="voiceEnabled" type="checkbox"><label for="voiceEnabled">回答読み上げON</label></div></div></div>
+    <div class="card"><h2>36協定</h2><div class="check"><input id="disasterRestoration" type="checkbox"><label for="disasterRestoration">災害復旧・復興工事の特例</label></div><p class="helper">通常の建設工事ではOFFのまま使用してください。</p></div>
+  </div>
+  <div class="card actions"><button id="saveSettings" class="primary">設定を保存</button><span id="storageState" class="pill warn">保存状態確認中</span><button id="requestPersist" class="soft">永続ストレージを要求</button></div>
+  <div class="grid two">
+    <div class="card"><h2>バックアップ</h2><label>暗号化パスワード（任意）</label><input id="backupPassword" type="password"><div class="actions"><button id="exportBackup" class="primary">書き出す</button><label class="soft filebtn">復元<input id="importBackup" type="file" accept=".json,.zgbak" hidden></label></div></div>
+    <div class="card"><h2>データ管理</h2><button id="clearAll" class="dangerbtn">勤務データを全削除</button><p class="helper">ポイント・購入アイテム・設定は残します。</p></div>
+  </div>
+</section>
 </main>
-<script type="module" src="app.js"></script>
-</body></html>
+
+<div id="chatDrawer" class="drawer hidden"><div class="drawer-card"><div class="drawer-head"><strong><span id="drawerName">しおり</span>に質問</strong><button id="closeChat">×</button></div><div id="chatLog" class="chat-log"><div class="bubble bot">勤怠、残業、給与、休憩などを聞いてください。</div></div><div class="faq-row"><button data-q="今月の残業は？">今月の残業</button><button data-q="あと何時間働ける？">残り時間</button><button data-q="今月の給与見込みは？">給与見込み</button><button data-q="日曜勤務の扱いは？">日曜勤務</button></div><div class="chat-input"><input id="chatInput" placeholder="質問を入力"><button id="micBtn" title="音声入力">🎤</button><button id="sendChat">送信</button></div><p class="helper">文字質問は端末内で回答します。音声認識は端末・ブラウザのサービスを利用する場合があります。</p></div></div>
+
+<div id="fortuneModal" class="modal hidden"><div class="fortune-stage"><button id="closeFortune" class="modal-close">×</button><img id="fortuneCharacter" src="characters/shiori.jpg"><div id="fortuneAnimation" class="fortune-animation"><span id="fortuneIcon">🎋</span><strong id="fortuneAction">おみくじを準備しています…</strong></div><div id="fortuneResult" class="fortune-result hidden"><div id="fortuneRank" class="fortune-rank">大吉</div><p id="fortuneText"></p><small>本日は再抽選できません。結果はいつでも見直せます。</small></div></div></div>
+
+<script type="module" src="app.js?v=060"></script>
+<script type="module" src="extras.mjs?v=060"></script>
+</body>
+</html>
