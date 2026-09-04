@@ -12,7 +12,9 @@ export function parseTimeToMinutes(t){
 export function grossShiftMinutes(start,end){
   const s=parseTimeToMinutes(start), e0=parseTimeToMinutes(end);
   if(s==null||e0==null) return 0;
-  const e=e0<=s?e0+1440:e0;
+  // End earlier than start means an overnight shift. Equal times mean zero duration,
+  // not an implicit 24-hour shift. This matters when clock-in/out occur in the same minute.
+  const e=e0<s?e0+1440:e0;
   return Math.max(0,e-s);
 }
 
@@ -117,7 +119,7 @@ function deepGrossInAbsoluteSegment(startAbs,endAbs,dayOffset){
 export function shiftDaySegments(entry){
   const s=parseTimeToMinutes(entry?.start),e0=parseTimeToMinutes(entry?.end);
   if(s==null||e0==null||!entry?.date) return [];
-  const e=e0<=s?e0+1440:e0;
+  const e=e0<s?e0+1440:e0;
   if(e<=s) return [];
   const segments=[];
   const lastDay=Math.floor((e-1)/1440);
@@ -157,7 +159,8 @@ export function shiftDaySegments(entry){
 export function deepNightOverlapMinutes(start,end){
   const s=parseTimeToMinutes(start),e0=parseTimeToMinutes(end);
   if(s==null||e0==null)return 0;
-  const e=e0<=s?e0+1440:e0;
+  const e=e0<s?e0+1440:e0;
+  if(e<=s)return 0;
   let total=0;
   const lastDay=Math.floor((e-1)/1440);
   for(let d=0;d<=lastDay;d++) total+=deepGrossInAbsoluteSegment(s,e,d);

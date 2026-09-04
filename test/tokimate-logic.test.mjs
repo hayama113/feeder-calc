@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   flexLegalLimitMinutes,isJapanHoliday,defaultAttendanceType,shiftDaySegments,
-  classifyFlexMonth,limitStatus,deepMinutes,legalHolidayWorkMinutes
+  classifyFlexMonth,limitStatus,deepMinutes,legalHolidayWorkMinutes,
+  grossShiftMinutes,workMinutes,companyBreakSuggestionMinutes,deepNightOverlapMinutes
 } from '../zangyo36/logic.mjs';
 
 test('TokiMate flex legal limits match calendar-day formula',()=>{
@@ -18,6 +19,23 @@ test('TokiMate Japanese Monday and substitute holidays are correct for 2026',()=
   assert.equal(isJapanHoliday('2026-09-22'),true);
   assert.equal(isJapanHoliday('2026-05-06'),true);
   assert.equal(defaultAttendanceType('2026-01-12'),'特休');
+});
+
+test('TokiMate same-minute clock-in/out is zero duration, not 24 hours',()=>{
+  const e={date:'2026-09-05',start:'00:44',end:'00:44',breakMinutes:60,nightBreakMinutes:0};
+  assert.equal(grossShiftMinutes(e.start,e.end),0);
+  assert.equal(workMinutes(e),0);
+  assert.equal(companyBreakSuggestionMinutes(e.start,e.end),0);
+  assert.equal(deepNightOverlapMinutes(e.start,e.end),0);
+  assert.equal(deepMinutes(e),0);
+  assert.equal(classifyFlexMonth([e],'2026-09').actual,0);
+});
+
+test('TokiMate end earlier than start is still treated as overnight',()=>{
+  const e={date:'2026-09-05',start:'22:00',end:'05:00',breakMinutes:0,nightBreakMinutes:0};
+  assert.equal(grossShiftMinutes(e.start,e.end),420);
+  assert.equal(workMinutes(e),420);
+  assert.equal(deepMinutes(e),420);
 });
 
 test('TokiMate overnight shift splits statutory Sunday at midnight',()=>{
