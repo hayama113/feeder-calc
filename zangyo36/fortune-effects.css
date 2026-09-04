@@ -1,0 +1,39 @@
+.fortune-stage{isolation:isolate}
+.fortune-stage::before,.fortune-stage::after{content:"";position:absolute;inset:auto;pointer-events:none;opacity:0}
+.fortune-stage .fortune-performing{will-change:transform,filter}
+.fx-shiori #fortuneCharacter.fortune-performing{animation:shioriOffer 1.5s ease-in-out}
+.fx-carrie #fortuneCharacter.fortune-performing{animation:carrieShuffle 1.5s ease-in-out}
+.fx-takeru #fortuneCharacter.fortune-performing{animation:takeruShake 1.5s ease-in-out}
+.fx-seojun #fortuneCharacter.fortune-performing{animation:seojunOpen 1.5s ease-in-out}
+.fx-maru #fortuneCharacter.fortune-performing{animation:maruRun 1.5s cubic-bezier(.2,.8,.2,1)}
+.fx-robotan #fortuneCharacter.fortune-performing{animation:robotScan 1.5s ease-in-out}
+.fx-shiori #fortuneIcon{animation:fortuneBox .55s ease-in-out infinite alternate}
+.fx-carrie #fortuneIcon{animation:cardFlip .6s ease-in-out infinite}
+.fx-takeru #fortuneIcon{animation:tubeShake .32s ease-in-out infinite alternate}
+.fx-seojun #fortuneIcon{animation:envelopeOpen .8s ease-in-out infinite alternate}
+.fx-maru #fortuneIcon{animation:dogBounce .38s ease-in-out infinite alternate}
+.fx-robotan #fortuneIcon{animation:scanPulse .55s ease-in-out infinite alternate}
+.fx-robotan .fortune-animation::after{content:"SCANNING";font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.18em;color:var(--accent2);animation:blink .5s steps(2,end) infinite}
+.fx-shiori .fortune-animation::after{content:"おみくじ箱 → 一枚選択";font-size:11px;color:var(--muted)}
+.fx-carrie .fortune-animation::after{content:"SHUFFLE → DRAW";font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.fx-takeru .fortune-animation::after{content:"筒を振っています";font-size:11px;color:var(--muted)}
+.fx-seojun .fortune-animation::after{content:"封筒を開封しています";font-size:11px;color:var(--muted)}
+.fx-maru .fortune-animation::after{content:"おみくじをお届け中";font-size:11px;color:var(--muted)}
+.fortune-big-win{box-shadow:0 0 0 2px rgba(240,190,70,.25),0 18px 70px rgba(225,169,31,.35)}
+.fortune-big-win .fortune-rank{animation:bigWin .7s cubic-bezier(.2,1.4,.3,1),goldGlow 1.2s ease-in-out infinite alternate}
+@keyframes shioriOffer{0%{transform:translateY(10px) scale(.98)}45%{transform:translateY(-5px) scale(1.015)}70%{transform:translateY(0) rotate(-1deg)}100%{transform:none}}
+@keyframes carrieShuffle{0%,100%{transform:none}25%{transform:translateX(-7px) rotate(-1.5deg)}50%{transform:translateX(7px) rotate(1.5deg)}75%{transform:translateX(-4px) rotate(-.8deg)}}
+@keyframes takeruShake{0%,100%{transform:none}20%{transform:rotate(-2deg) translateY(-2px)}40%{transform:rotate(2deg) translateY(2px)}60%{transform:rotate(-2deg) translateY(-2px)}80%{transform:rotate(1deg)}}
+@keyframes seojunOpen{0%{transform:scale(.97);filter:brightness(.96)}55%{transform:scale(1.02);filter:brightness(1.05)}100%{transform:none;filter:none}}
+@keyframes maruRun{0%{transform:translateX(-35px) scale(.94)}35%{transform:translateX(8px) translateY(-4px) scale(1.02)}55%{transform:translateX(-3px) translateY(0)}75%{transform:translateY(-5px)}100%{transform:none}}
+@keyframes robotScan{0%,100%{filter:brightness(1);transform:none}35%{filter:brightness(1.15) saturate(1.2);transform:scale(1.01)}70%{filter:brightness(1.05) drop-shadow(0 0 12px rgba(70,160,255,.55));transform:scale(.995)}}
+@keyframes fortuneBox{from{transform:rotate(-5deg) scale(1)}to{transform:rotate(5deg) scale(1.08)}}
+@keyframes cardFlip{0%{transform:rotateY(0)}50%{transform:rotateY(90deg) scale(1.08)}100%{transform:rotateY(180deg)}}
+@keyframes tubeShake{from{transform:rotate(-10deg) translateX(-2px)}to{transform:rotate(10deg) translateX(2px)}}
+@keyframes envelopeOpen{from{transform:translateY(0) scale(1)}to{transform:translateY(-5px) scale(1.08)}}
+@keyframes dogBounce{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-8px) rotate(3deg)}}
+@keyframes scanPulse{from{transform:scale(.92);filter:drop-shadow(0 0 0 rgba(80,180,255,0))}to{transform:scale(1.12);filter:drop-shadow(0 0 10px rgba(80,180,255,.75))}}
+@keyframes blink{50%{opacity:.28}}
+@keyframes bigWin{0%{transform:scale(.55) rotate(-4deg);opacity:0}65%{transform:scale(1.16) rotate(1deg);opacity:1}100%{transform:scale(1)}}
+@keyframes goldGlow{from{text-shadow:0 2px 0 #fff,0 0 0 rgba(245,188,50,0)}to{text-shadow:0 2px 0 #fff,0 0 24px rgba(245,188,50,.8)}}
+@media (prefers-reduced-motion:reduce){.fortune-stage *{animation-duration:.01ms!important;animation-iteration-count:1!important}}

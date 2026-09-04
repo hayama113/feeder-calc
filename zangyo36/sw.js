@@ -1,6 +1,6 @@
-const CACHE_NAME='zangyo36-v0.6.3';
-const SHIORI='./characters/shiori-v063.jpg?v=063';
-const ASSETS=['./','./index.html','./styles.css?v=061','./app.js?v=061','./logic.mjs?v=061','./extras.mjs?v=061','./manifest.webmanifest','./icon.svg',SHIORI,'./characters/carrie.jpg?v=061','./characters/takeru.jpg?v=061','./characters/seojun.jpg?v=061','./characters/maru.jpg?v=061','./characters/robotan.jpg?v=061'];
+const CACHE_NAME='zangyo36-v0.6.4';
+const SHIORI='./characters/shiori-v063.jpg?v=064';
+const ASSETS=['./','./index.html','./styles.css?v=064','./fortune-effects.css?v=064','./app.js?v=064','./fortune-effects.mjs?v=064','./logic.mjs?v=061','./extras.mjs?v=064','./manifest.webmanifest','./icon.svg',SHIORI,'./characters/carrie.jpg?v=061','./characters/takeru.jpg?v=061','./characters/seojun.jpg?v=061','./characters/maru.jpg?v=061','./characters/robotan.jpg?v=061'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('zangyo36-')&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
