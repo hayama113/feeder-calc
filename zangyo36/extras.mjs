@@ -21,7 +21,7 @@ $('#micBtn')?.addEventListener('click',voiceInput);
 showPersist();
 
 const APP_NAME='TokiMate Pro';
-const APP_VERSION='v0.7.0';
+const APP_VERSION='v0.7.1';
 const CHARACTER_IDS=['shiori','carrie','takeru','seojun','maru','robotan'];
 const CHARACTER_ROOT='./characters-v066/';
 function applyBranding(){
@@ -40,14 +40,15 @@ function repairCharacterImage(img){
   const id=characterIdFromSrc(src);
   if(!id||!CHARACTER_IDS.includes(id))return;
   img.dataset.characterId=id;
-  if(!src.includes('/characters-v066/'))img.src=`${CHARACTER_ROOT}${id}.jpg?v=070`;
+  if(!src.includes('/characters-v066/'))img.src=`${CHARACTER_ROOT}${id}.jpg?v=071`;
 }
 function repairAllCharacters(root=document){root.querySelectorAll?.('img').forEach(repairCharacterImage)}
 const characterObserver=new MutationObserver(records=>{for(const r of records){if(r.type==='attributes'&&r.target instanceof HTMLImageElement)repairCharacterImage(r.target);for(const n of r.addedNodes)if(n instanceof Element){if(n instanceof HTMLImageElement)repairCharacterImage(n);repairAllCharacters(n)}}});
 characterObserver.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
-document.addEventListener('error',e=>{const img=e.target;if(!(img instanceof HTMLImageElement))return;const id=img.dataset.characterId||characterIdFromSrc(img.getAttribute('src')||'');if(!id||img.dataset.characterFallback==='1')return;img.dataset.characterFallback='1';img.src=`./characters/${id}.jpg?v=070`;},true);
+document.addEventListener('error',e=>{const img=e.target;if(!(img instanceof HTMLImageElement))return;const id=img.dataset.characterId||characterIdFromSrc(img.getAttribute('src')||'');if(!id||img.dataset.characterFallback==='1')return;img.dataset.characterFallback='1';img.src=`./characters/${id}.jpg?v=071`;},true);
 applyBranding();
 repairAllCharacters();
 
+import('./navigation.js?v=071').catch(e=>console.error('navigation fallback load failed',e));
 import('./character-motion.mjs?v=068').catch(e=>console.error('character motion load failed',e));
 import('./salary-basis.mjs?v=070').catch(e=>console.error('salary basis load failed',e));
