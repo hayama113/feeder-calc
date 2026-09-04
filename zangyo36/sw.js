@@ -1,8 +1,8 @@
-const CACHE_NAME='zangyo36-v0.6.7';
+const CACHE_NAME='zangyo36-v0.6.8';
 const CHARACTER_IDS=['shiori','carrie','takeru','seojun','maru','robotan'];
 const CHARACTER_ROOT='./characters-v066/';
-const CHARACTERS=CHARACTER_IDS.map(id=>`${CHARACTER_ROOT}${id}.jpg?v=067`);
-const ASSETS=['./','./index.html','./styles.css?v=064','./fortune-effects.css?v=064','./app.js?v=064','./fortune-effects.mjs?v=064','./logic.mjs?v=061','./extras.mjs?v=064','./manifest.webmanifest','./icon.svg',...CHARACTERS];
+const CHARACTERS=CHARACTER_IDS.map(id=>`${CHARACTER_ROOT}${id}.jpg?v=068`);
+const ASSETS=['./','./index.html','./styles.css?v=064','./fortune-effects.css?v=064','./app.js?v=064','./fortune-effects.mjs?v=064','./logic.mjs?v=061','./extras.mjs?v=064','./character-motion.mjs?v=068','./manifest.webmanifest','./icon.svg',...CHARACTERS];
 
 self.addEventListener('install',e=>e.waitUntil(
   caches.open(CACHE_NAME).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())
