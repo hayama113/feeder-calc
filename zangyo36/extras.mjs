@@ -19,3 +19,32 @@ $('#requestPersist')?.addEventListener('click',persist);
 $('#clearAll')?.addEventListener('click',clearEntries);
 $('#micBtn')?.addEventListener('click',voiceInput);
 showPersist();
+
+const APP_NAME='TokiMate Pro';
+const APP_VERSION='v0.6.6';
+const CHARACTER_IDS=['shiori','carrie','takeru','seojun','maru','robotan'];
+const CHARACTER_ROOT='./characters-v066/';
+function applyBranding(){
+  document.title=APP_NAME;
+  const brand=document.querySelector('.brand strong'); if(brand)brand.textContent=APP_NAME;
+  const mark=document.querySelector('.brandmark'); if(mark)mark.textContent='T';
+  const sub=document.querySelector('.brand small'); if(sub)sub.textContent=`勤怠・給与アシスタント ${APP_VERSION}`;
+}
+function characterIdFromSrc(src=''){
+  const m=src.match(/\/(shiori|carrie|takeru|seojun|maru|robotan)(?:-v\d+)?\.jpe?g(?:[?#].*)?$/i);
+  return m?.[1]?.toLowerCase()||'';
+}
+function repairCharacterImage(img){
+  if(!(img instanceof HTMLImageElement))return;
+  const src=img.getAttribute('src')||'';
+  const id=characterIdFromSrc(src);
+  if(!id||!CHARACTER_IDS.includes(id))return;
+  img.dataset.characterId=id;
+  if(!src.includes('/characters-v066/'))img.src=`${CHARACTER_ROOT}${id}.jpg?v=066`;
+}
+function repairAllCharacters(root=document){root.querySelectorAll?.('img').forEach(repairCharacterImage)}
+const characterObserver=new MutationObserver(records=>{for(const r of records){if(r.type==='attributes'&&r.target instanceof HTMLImageElement)repairCharacterImage(r.target);for(const n of r.addedNodes)if(n instanceof Element){if(n instanceof HTMLImageElement)repairCharacterImage(n);repairAllCharacters(n)}}});
+characterObserver.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
+document.addEventListener('error',e=>{const img=e.target;if(!(img instanceof HTMLImageElement))return;const id=img.dataset.characterId||characterIdFromSrc(img.getAttribute('src')||'');if(!id||img.dataset.characterFallback==='1')return;img.dataset.characterFallback='1';img.src=`./characters/${id}.jpg?v=066`;},true);
+applyBranding();
+repairAllCharacters();
