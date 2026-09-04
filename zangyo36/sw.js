@@ -1,5 +1,5 @@
-const CACHE_NAME='zangyo36-v0.6.0';
-const ASSETS=['./','./index.html','./styles.css','./app.js','./logic.mjs','./extras.mjs','./manifest.webmanifest','./icon.svg','./characters/shiori.jpg','./characters/carrie.jpg','./characters/takeru.jpg','./characters/seojun.jpg','./characters/maru.jpg','./characters/robotan.jpg'];
+const CACHE_NAME='zangyo36-v0.6.1';
+const ASSETS=['./','./index.html','./styles.css?v=061','./app.js?v=061','./logic.mjs?v=061','./extras.mjs?v=061','./manifest.webmanifest','./icon.svg','./characters/shiori.jpg?v=061','./characters/carrie.jpg?v=061','./characters/takeru.jpg?v=061','./characters/seojun.jpg?v=061','./characters/maru.jpg?v=061','./characters/robotan.jpg?v=061'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('zangyo36-')&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE_NAME).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(c=>c||caches.match('./index.html'))))});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();caches.open(CACHE_NAME).then(c=>c.put(e.request,copy))}return r}).catch(async()=>{const cached=await caches.match(e.request);if(cached)return cached;if(e.request.mode==='navigate')return caches.match('./index.html');return Response.error()}))});
