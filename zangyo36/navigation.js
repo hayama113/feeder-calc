@@ -1,5 +1,33 @@
 (function(){
   'use strict';
+  const DB_NAME='zangyo36_db';
+  const DB_VERSION=3;
+  const DB_STORES=[['entries','id'],['settings','key'],['payslips','month'],['extras','key']];
+  function installDbSchemaCompat(){
+    const proto=globalThis.IDBFactory?.prototype;
+    if(!proto?.open||proto.open.__tokimateDbSchemaCompat)return;
+    const nativeOpen=proto.open;
+    function wrappedOpen(name,version){
+      const target=name===DB_NAME&&(version==null||Number(version)<DB_VERSION);
+      const request=target
+        ?nativeOpen.call(this,name,DB_VERSION)
+        :(arguments.length<2?nativeOpen.call(this,name):nativeOpen.call(this,name,version));
+      if(name===DB_NAME){
+        request.addEventListener('upgradeneeded',()=>{
+          const db=request.result;
+          for(const [store,keyPath] of DB_STORES){
+            if(!db.objectStoreNames.contains(store))db.createObjectStore(store,{keyPath});
+          }
+          globalThis.document?.documentElement?.setAttribute?.('data-db-schema',String(DB_VERSION));
+        });
+      }
+      return request;
+    }
+    Object.defineProperty(wrappedOpen,'__tokimateDbSchemaCompat',{value:true});
+    Object.defineProperty(proto,'open',{configurable:true,writable:true,value:wrappedOpen});
+  }
+  installDbSchemaCompat();
+
   const VALID=new Set(['today','monthly','payroll','fun','settings']);
   function activate(name,opts={}){
     if(!VALID.has(name))return false;
@@ -48,7 +76,7 @@
   function coreLooksReady(){
     const month=document.getElementById('monthlyMonth');
     const wage=document.getElementById('wageMonth');
-    return !!(month?.options?.length&&wage?.options?.length);
+    return !!(month?.options?.length&&wage?.options?.length&&document.querySelectorAll('#dailyRows tr').length);
   }
 
   async function recoverCore(){
@@ -57,10 +85,7 @@
       return;
     }
     try{
-      const appUrl=new URL('./app.js?v=075',location.href);
-      const response=await fetch(appUrl,{cache:'no-store'});
-      if(!response.ok)throw new Error(`app.js ${response.status}`);
-      await response.text();
+      const appUrl=new URL(`./app.js?v=075&recover=${Date.now()}`,location.href);
       await import(appUrl.href);
       setTimeout(()=>{
         if(coreLooksReady()){
@@ -68,12 +93,12 @@
           document.documentElement.dataset.coreRecovered='1';
           document.getElementById('tokimateCoreError')?.remove();
         }else{
-          showCoreError('勤怠データ画面の初期化に失敗しました。再読み込みしてください。');
+          showCoreError('勤怠データの初期化に失敗しました。端末内データの自動修復後も起動できませんでした。');
         }
       },250);
     }catch(e){
       console.error('TokiMate core recovery failed',e);
-      showCoreError('勤怠データ画面の初期化に失敗しました。再読み込みしてください。');
+      showCoreError('勤怠データの初期化に失敗しました。端末内データの自動修復後も起動できませんでした。');
     }
   }
 
