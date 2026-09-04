@@ -6,15 +6,15 @@
 <meta name="theme-color" content="#102a56">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>RecoLife 勤怠・給与アシスタント</title>
+<title>TokiMate Pro</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="./styles.css?v=064">
-<link rel="stylesheet" href="./fortune-effects.css?v=064">
+<link rel="stylesheet" href="./styles.css?v=074">
+<link rel="stylesheet" href="./fortune-effects.css?v=074">
 </head>
 <body data-theme="navy">
 <header class="appbar">
-  <div class="brand"><div class="brandmark">R</div><div><strong>RecoLife</strong><small>勤怠・給与アシスタント v0.6.4</small></div></div>
+  <div class="brand"><div class="brandmark">T</div><div><strong>TokiMate Pro</strong><small>勤怠・給与アシスタント v0.7.4</small></div></div>
   <span id="saveState" class="pill ok">保存済み</span>
 </header>
 <nav class="tabs">
@@ -42,7 +42,7 @@
       </div>
     </div>
     <aside class="assistant-card">
-      <div class="avatar-wrap"><img id="heroCharacter" src="./characters/shiori.jpg?v=064" alt="しおり"><span id="equippedBadge" class="equip-badge hidden"></span></div>
+      <div class="avatar-wrap"><img id="heroCharacter" src="./characters-v066/shiori.jpg?v=074" alt="しおり"><span id="equippedBadge" class="equip-badge hidden"></span></div>
       <div class="speech"><strong id="heroName">しおり</strong><p id="heroMessage">おはようございます。今日も無理のない勤務でいきましょう。</p></div>
     </aside>
   </div>
@@ -111,7 +111,7 @@
   <div class="card"><h2>キャラクター</h2><p class="helper">キャラクターの顔・髪型・雰囲気は確定デザインを使用します。</p><div id="characterGrid" class="character-grid"></div></div>
   <div class="grid two">
     <div class="card"><h2>ポイント交換所</h2><div class="point-line"><b id="shopPoints">0</b><span>pt</span></div><div id="shopGrid" class="shop-grid"></div></div>
-    <div class="card"><h2>装備中</h2><div class="equipped-preview"><img id="shopCharacter" src="./characters/shiori.jpg?v=064"><div><strong id="shopCharacterName">しおり</strong><p id="equippedText">アイテムなし</p><button id="unequipBtn" class="soft">装備を外す</button></div></div><p class="helper">購入済みアイテムは何度でも付け替えできます。</p></div>
+    <div class="card"><h2>装備中</h2><div class="equipped-preview"><img id="shopCharacter" src="./characters-v066/shiori.jpg?v=074"><div><strong id="shopCharacterName">しおり</strong><p id="equippedText">アイテムなし</p><button id="unequipBtn" class="soft">装備を外す</button></div></div><p class="helper">購入済みアイテムは何度でも付け替えできます。</p></div>
   </div>
 </section>
 
@@ -132,10 +132,11 @@
 
 <div id="chatDrawer" class="drawer hidden"><div class="drawer-card"><div class="drawer-head"><strong><span id="drawerName">しおり</span>に質問</strong><button id="closeChat">×</button></div><div id="chatLog" class="chat-log"><div class="bubble bot">勤怠、残業、給与、休憩などを聞いてください。</div></div><div class="faq-row"><button data-q="今月の残業は？">今月の残業</button><button data-q="あと何時間働ける？">残り時間</button><button data-q="今月の給与見込みは？">給与見込み</button><button data-q="日曜勤務の扱いは？">日曜勤務</button></div><div class="chat-input"><input id="chatInput" placeholder="質問を入力"><button id="micBtn" title="音声入力">🎤</button><button id="sendChat">送信</button></div><p class="helper">文字質問は端末内で回答します。音声認識は端末・ブラウザのサービスを利用する場合があります。</p></div></div>
 
-<div id="fortuneModal" class="modal hidden"><div class="fortune-stage"><button id="closeFortune" class="modal-close">×</button><img id="fortuneCharacter" src="./characters/shiori.jpg?v=064"><div id="fortuneAnimation" class="fortune-animation"><span id="fortuneIcon">🎋</span><strong id="fortuneAction">おみくじを準備しています…</strong></div><div id="fortuneResult" class="fortune-result hidden"><div id="fortuneRank" class="fortune-rank">大吉</div><p id="fortuneText"></p><small>本日は再抽選できません。結果はいつでも見直せます。</small></div></div></div>
+<div id="fortuneModal" class="modal hidden"><div class="fortune-stage"><button id="closeFortune" class="modal-close">×</button><img id="fortuneCharacter" src="./characters-v066/shiori.jpg?v=074"><div id="fortuneAnimation" class="fortune-animation"><span id="fortuneIcon">🎋</span><strong id="fortuneAction">おみくじを準備しています…</strong></div><div id="fortuneResult" class="fortune-result hidden"><div id="fortuneRank" class="fortune-rank">大吉</div><p id="fortuneText"></p><small>本日は再抽選できません。結果はいつでも見直せます。</small></div></div></div>
 
-<script type="module" src="./app.js?v=064"></script>
-<script type="module" src="./fortune-effects.mjs?v=064"></script>
-<script type="module" src="./extras.mjs?v=064"></script>
+<script src="./navigation.js?v=074"></script>
+<script type="module" src="./app.js?v=074"></script>
+<script type="module" src="./fortune-effects.mjs?v=074"></script>
+<script type="module" src="./extras.mjs?v=074"></script>
 </body>
 </html>
