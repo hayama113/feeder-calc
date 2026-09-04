@@ -9,8 +9,8 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
-const VERSION='075';
-const DISPLAY='v0.7.5';
+const VERSION='076';
+const DISPLAY='v0.7.6';
 
 test('TokiMate static shell loads one coherent release',()=>{
   const html=read('zangyo36/index.html');
@@ -28,19 +28,20 @@ test('TokiMate core modules do not pin stale cache versions',()=>{
   const extras=read('zangyo36/extras.mjs');
   const attendance=read('zangyo36/attendance-core.mjs');
   const nav=read('zangyo36/navigation.js');
-  assert.match(app,/logic\.mjs\?v=075/);
-  assert.match(app,/sw\.js\?v=075/);
-  assert.match(attendance,/logic\.mjs\?v=075/);
-  assert.match(nav,/app\.js\?v=075/);
-  assert.match(extras,/APP_VERSION='v0\.7\.5'/);
-  assert.match(extras,/attendance-core\.mjs\?v=075/);
-  assert.match(extras,/salary-basis\.mjs\?v=075/);
+  assert.match(app,/logic\.mjs\?v=076/);
+  assert.match(app,/sw\.js\?v=076/);
+  assert.match(attendance,/logic\.mjs\?v=076/);
+  assert.match(nav,/app\.js\?v=076/);
+  assert.match(extras,/APP_VERSION='v0\.7\.6'/);
+  assert.match(extras,/attendance-core\.mjs\?v=076/);
+  assert.match(extras,/salary-basis\.mjs\?v=076/);
+  assert.match(extras,/payroll-review\.mjs\?v=076/);
 });
 
 test('TokiMate PWA precache uses current release URLs',()=>{
   const sw=read('zangyo36/sw.js');
-  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.5'/);
-  for(const asset of ['app.js','logic.mjs','extras.mjs','navigation.js','attendance-core.mjs','salary-basis.mjs']){
+  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6'/);
+  for(const asset of ['app.js','logic.mjs','extras.mjs','navigation.js','attendance-core.mjs','salary-basis.mjs','payroll-review.mjs']){
     assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=${VERSION}`));
   }
   assert.doesNotMatch(sw,/\?v=074|\?v=073|\?v=072|\?v=071|\?v=070|\?v=064|\?v=061/);
