@@ -32,12 +32,64 @@
     if(!btn||!['Enter',' '].includes(ev.key))return;
     if(activate(btn.dataset.tab))ev.preventDefault();
   },true);
+
+  function showCoreError(message){
+    if(document.getElementById('tokimateCoreError'))return;
+    const anchor=document.querySelector('#tab-monthly .month-head');
+    if(!anchor)return;
+    const note=document.createElement('div');
+    note.id='tokimateCoreError';
+    note.className='notice danger';
+    note.style.margin='0 0 12px';
+    note.textContent=message;
+    anchor.insertAdjacentElement('afterend',note);
+  }
+
+  function coreLooksReady(){
+    const month=document.getElementById('monthlyMonth');
+    const wage=document.getElementById('wageMonth');
+    return !!(month?.options?.length&&wage?.options?.length);
+  }
+
+  async function recoverCore(){
+    if(coreLooksReady()){
+      document.documentElement.dataset.coreReady='1';
+      return;
+    }
+    try{
+      const appUrl=new URL('./app.js?v=073',location.href);
+      const logicUrl=new URL('./logic.mjs?v=073',location.href).href;
+      const response=await fetch(appUrl,{cache:'no-store'});
+      if(!response.ok)throw new Error(`app.js ${response.status}`);
+      let source=await response.text();
+      const before="from'./logic.mjs?v=061'";
+      const after=`from'${logicUrl}'`;
+      if(!source.includes(before))throw new Error('logic import marker not found');
+      source=source.replace(before,after);
+      const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+      try{await import(blobUrl)}finally{setTimeout(()=>URL.revokeObjectURL(blobUrl),5000)}
+      setTimeout(()=>{
+        if(coreLooksReady()){
+          document.documentElement.dataset.coreReady='1';
+          document.documentElement.dataset.coreRecovered='1';
+          document.getElementById('tokimateCoreError')?.remove();
+        }else{
+          showCoreError('勤怠データ画面の初期化に失敗しました。再読み込みしてください。');
+        }
+      },250);
+    }catch(e){
+      console.error('TokiMate core recovery failed',e);
+      showCoreError('勤怠データ画面の初期化に失敗しました。再読み込みしてください。');
+    }
+  }
+
   function init(){
     const current=document.querySelector('.tabbtn.active[data-tab]')?.dataset.tab||'today';
     activate(VALID.has(current)?current:'today',{scroll:false});
     document.documentElement.dataset.navigationReady='1';
+    setTimeout(recoverCore,900);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
-  window.TokiMateNavigation={activate};
+  window.TokiMateNavigation={activate,recoverCore};
 })();
