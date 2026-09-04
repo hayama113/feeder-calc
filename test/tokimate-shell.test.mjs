@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
-const VERSION='074';
-const DISPLAY='v0.7.4';
+const VERSION='075';
+const DISPLAY='v0.7.5';
 
 test('TokiMate static shell loads one coherent release',()=>{
   const html=read('zangyo36/index.html');
@@ -27,22 +28,22 @@ test('TokiMate core modules do not pin stale cache versions',()=>{
   const extras=read('zangyo36/extras.mjs');
   const attendance=read('zangyo36/attendance-core.mjs');
   const nav=read('zangyo36/navigation.js');
-  assert.match(app,/logic\.mjs\?v=074/);
-  assert.match(app,/sw\.js\?v=074/);
-  assert.match(attendance,/logic\.mjs\?v=074/);
-  assert.match(nav,/app\.js\?v=074/);
-  assert.match(extras,/APP_VERSION='v0\.7\.4'/);
-  assert.match(extras,/attendance-core\.mjs\?v=074/);
-  assert.match(extras,/salary-basis\.mjs\?v=074/);
+  assert.match(app,/logic\.mjs\?v=075/);
+  assert.match(app,/sw\.js\?v=075/);
+  assert.match(attendance,/logic\.mjs\?v=075/);
+  assert.match(nav,/app\.js\?v=075/);
+  assert.match(extras,/APP_VERSION='v0\.7\.5'/);
+  assert.match(extras,/attendance-core\.mjs\?v=075/);
+  assert.match(extras,/salary-basis\.mjs\?v=075/);
 });
 
 test('TokiMate PWA precache uses current release URLs',()=>{
   const sw=read('zangyo36/sw.js');
-  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.4'/);
+  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.5'/);
   for(const asset of ['app.js','logic.mjs','extras.mjs','navigation.js','attendance-core.mjs','salary-basis.mjs']){
     assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=${VERSION}`));
   }
-  assert.doesNotMatch(sw,/\?v=073|\?v=072|\?v=071|\?v=070|\?v=064|\?v=061/);
+  assert.doesNotMatch(sw,/\?v=074|\?v=073|\?v=072|\?v=071|\?v=070|\?v=064|\?v=061/);
 });
 
 test('TokiMate monthly/payroll anchors required by the core exist',()=>{
@@ -50,4 +51,11 @@ test('TokiMate monthly/payroll anchors required by the core exist',()=>{
   for(const id of ['monthlyMonth','dailyRows','avgList','statusSummary','wageMonth','hourly','wageTotal','baseSalary','wageBaseMonthly','avgMonthlyScheduledHours']){
     assert.match(html,new RegExp(`id=["']${id}["']`),`missing #${id}`);
   }
+});
+
+
+test('TokiMate app.js parses as an ES module',()=>{
+  const app=read('zangyo36/app.js');
+  const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:app,encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr||result.stdout||'app.js parse failed');
 });
