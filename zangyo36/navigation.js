@@ -102,10 +102,15 @@
     }
   }
 
+  function loadScheduledHours(){
+    import('./scheduled-hours.mjs?v=075sh1').catch(e=>console.error('scheduled hours load failed',e));
+  }
+
   function init(){
     const current=document.querySelector('.tabbtn.active[data-tab]')?.dataset.tab||'today';
     activate(VALID.has(current)?current:'today',{scroll:false});
     document.documentElement.dataset.navigationReady='1';
+    loadScheduledHours();
     setTimeout(recoverCore,900);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
