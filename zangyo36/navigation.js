@@ -57,7 +57,7 @@
       return;
     }
     try{
-      const appUrl=new URL('./app.js?v=074',location.href);
+      const appUrl=new URL('./app.js?v=075',location.href);
       const response=await fetch(appUrl,{cache:'no-store'});
       if(!response.ok)throw new Error(`app.js ${response.status}`);
       await response.text();
