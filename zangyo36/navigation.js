@@ -85,7 +85,7 @@
       return;
     }
     try{
-      const appUrl=new URL(`./app.js?v=075&recover=${Date.now()}`,location.href);
+      const appUrl=new URL(`./app.js?v=076&recover=${Date.now()}`,location.href);
       await import(appUrl.href);
       setTimeout(()=>{
         if(coreLooksReady()){
@@ -103,7 +103,7 @@
   }
 
   function loadScheduledHours(){
-    import('./scheduled-hours.mjs?v=075sh1').catch(e=>console.error('scheduled hours load failed',e));
+    import('./scheduled-hours.mjs?v=076sh1').catch(e=>console.error('scheduled hours load failed',e));
   }
 
   function init(){
