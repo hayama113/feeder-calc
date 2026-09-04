@@ -57,17 +57,11 @@
       return;
     }
     try{
-      const appUrl=new URL('./app.js?v=073',location.href);
-      const logicUrl=new URL('./logic.mjs?v=073',location.href).href;
+      const appUrl=new URL('./app.js?v=074',location.href);
       const response=await fetch(appUrl,{cache:'no-store'});
       if(!response.ok)throw new Error(`app.js ${response.status}`);
-      let source=await response.text();
-      const before="from'./logic.mjs?v=061'";
-      const after=`from'${logicUrl}'`;
-      if(!source.includes(before))throw new Error('logic import marker not found');
-      source=source.replace(before,after);
-      const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
-      try{await import(blobUrl)}finally{setTimeout(()=>URL.revokeObjectURL(blobUrl),5000)}
+      await response.text();
+      await import(appUrl.href);
       setTimeout(()=>{
         if(coreLooksReady()){
           document.documentElement.dataset.coreReady='1';
