@@ -1,4 +1,12 @@
 const $=s=>document.querySelector(s);
+function applyBrand(){
+  document.title='TokiMate Pro';
+  const name=$('.brand strong'),mark=$('.brandmark'),sub=$('.brand small');
+  if(name)name.textContent='TokiMate Pro';
+  if(mark)mark.textContent='T';
+  if(sub)sub.textContent='勤怠・給与アシスタント v0.6.5';
+}
+applyBrand();
 const FX={
   shiori:{icon:'🎋',cls:'fx-shiori',step2:'しおりがおみくじを開いています…'},
   carrie:{icon:'🃏',cls:'fx-carrie',step2:'キャリーがカードをめくっています…'},
