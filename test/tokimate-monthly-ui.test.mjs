@@ -41,6 +41,19 @@ test('monthly sheet uses arrow paging and a long-press month picker',()=>{
   assert.match(app,/\.min=r\.minDate;\$\('#detailDate'\)\.max=r\.maxDate/);
 });
 
+test('monthly summary shows remaining required hours and no explanatory sentence',()=>{
+  assert.doesNotMatch(html,/左右の矢印で月送り。年月を長押しすると月一覧を表示します。/);
+  assert.match(html,/あと必要（規定－実労働）/);
+  assert.match(html,/id="sRemaining"/);
+  assert.doesNotMatch(html,/id="sHoliday"/);
+  assert.match(app,/sRemaining'\)\.textContent=fmtMinutes\(Math\.max\(0,m\.companyLimit-m\.actual\)\)/);
+});
+
+test('special leave tags are blue',()=>{
+  assert.match(app,/type==='特休'\?'tag tm-special-leave':'tag'/);
+  assert.match(ui,/\.tm-special-leave\{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd\}/);
+});
+
 test('rule sections are compact details opened on tap',()=>{
   assert.match(html,/<details class="tm-rule-details"><summary>2〜6か月平均<\/summary>/);
   assert.match(html,/<details class="tm-rule-details"><summary>36協定判定<\/summary>/);
@@ -61,6 +74,6 @@ test('fortune result requests one short vibration with its sound',()=>{
 });
 
 test('monthly UI module is loaded by TokiMate extras',()=>{
-  assert.match(extras,/monthly-ui\.mjs\?v=076m3/);
+  assert.match(extras,/monthly-ui\.mjs\?v=076m4/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });

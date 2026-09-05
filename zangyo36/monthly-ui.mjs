@@ -12,6 +12,7 @@ function installStyles(){
     #dayDetailCard.tm-day-modal .detail-head h2{font-size:18px}
     #dayDetailCard.tm-day-modal #closeDetail{min-width:72px}
     #dailyRows tr.tm-selected-row{outline:2px solid var(--accent2);outline-offset:-2px;background:var(--soft)}
+    #dailyRows .tm-special-leave{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd}
     .month-navigator{position:relative;display:grid;grid-template-columns:42px minmax(132px,1fr) 42px;gap:7px;align-items:center}
     .month-navigator>button{min-height:42px;border:0;border-radius:11px;background:var(--soft);color:var(--text);font-weight:850;font-size:16px;touch-action:manipulation;user-select:none;-webkit-touch-callout:none}
     .month-navigator>button:first-child,.month-navigator>button:last-of-type{font-size:28px;line-height:1}
@@ -125,7 +126,7 @@ function installEvents(){
 
 function updateHelper(){
   const helper=document.querySelector('#tab-monthly .month-head .helper');
-  if(helper)helper.textContent='左右の矢印で月送り。年月を長押しすると月一覧を表示します。日付タップで勤務詳細を開きます。';
+  if(helper)helper.remove();
 }
 
 function monthLabel(value=''){
