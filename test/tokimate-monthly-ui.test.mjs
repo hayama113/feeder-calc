@@ -20,6 +20,6 @@ test('day detail is presented as an immediate modal dialog',()=>{
 });
 
 test('monthly UI module is loaded by TokiMate extras',()=>{
-  assert.match(extras,/monthly-ui\.mjs\?v=077/);
-  assert.match(extras,/APP_VERSION='v0\.7\.7'/);
+  assert.match(extras,/monthly-ui\.mjs\?v=076m1/);
+  assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });
