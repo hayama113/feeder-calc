@@ -12,7 +12,14 @@ function installStyles(){
     #dayDetailCard.tm-day-modal .detail-head h2{font-size:18px}
     #dayDetailCard.tm-day-modal #closeDetail{min-width:72px}
     #dailyRows tr.tm-selected-row{outline:2px solid var(--accent2);outline-offset:-2px;background:var(--soft)}
-    #dailyRows .tm-special-leave{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd}
+    #dailyRows tr.tm-work-black{color:var(--text)}
+    #dailyRows tr.tm-work-blue{color:#1d4ed8}
+    #dailyRows tr.tm-work-red{color:#b91c1c}
+    #dailyRows tr.tm-work-green{color:#15803d}
+    #dailyRows tr.tm-work-black .tag{background:var(--soft);color:inherit;border:1px solid var(--line)}
+    #dailyRows tr.tm-work-blue .tag{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd}
+    #dailyRows tr.tm-work-red .tag{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
+    #dailyRows tr.tm-work-green .tag{background:#dcfce7;color:#15803d;border:1px solid #86efac}
     .tm-time-entry{display:grid;gap:7px}.tm-time-manual{background:var(--soft);font-variant-numeric:tabular-nums}.tm-time-manual::placeholder{color:var(--muted);opacity:.78}
     .month-navigator{position:relative;display:grid;grid-template-columns:42px minmax(132px,1fr) 42px;gap:7px;align-items:center}
     .month-navigator>button{min-height:42px;border:0;border-radius:11px;background:var(--soft);color:var(--text);font-weight:850;font-size:16px;touch-action:manipulation;user-select:none;-webkit-touch-callout:none}

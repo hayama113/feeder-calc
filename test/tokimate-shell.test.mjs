@@ -30,10 +30,10 @@ test('TokiMate core modules do not pin stale cache versions',()=>{
   const nav=read('zangyo36/navigation.js');
   assert.match(app,/logic\.mjs\?v=076/);
   assert.match(app,/sw\.js\?v=076/);
-  assert.match(attendance,/logic\.mjs\?v=076/);
-  assert.match(nav,/app\.js\?v=076b6/);
+  assert.doesNotMatch(attendance,/day-sun.*isSunday|day-sat.*isSaturday/);
+  assert.match(nav,/app\.js\?v=076b7/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
-  assert.match(extras,/attendance-core\.mjs\?v=076c4/);
+  assert.match(extras,/attendance-core\.mjs\?v=076c5/);
   assert.match(extras,/salary-basis\.mjs\?v=076/);
   assert.match(extras,/payroll-review\.mjs\?v=076c4/);
   assert.match(extras,/scheduled-hours\.mjs\?v=076c4/);
@@ -41,14 +41,15 @@ test('TokiMate core modules do not pin stale cache versions',()=>{
 
 test('TokiMate PWA precache uses current release URLs',()=>{
   const sw=read('zangyo36/sw.js');
-  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6-manual-work-type7'/);
+  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6-work-type-colors8'/);
   for(const asset of ['navigation.js','salary-basis.mjs']){
     assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=${VERSION}`));
   }
-  assert.match(sw,/app\.js\?v=076b6/);
-  for(const asset of ['logic.mjs','attendance-core.mjs','payroll-review.mjs','scheduled-hours.mjs'])assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=076c4`));
-  assert.match(sw,/extras\.mjs\?v=076m8/);
-  assert.match(sw,/monthly-ui\.mjs\?v=076m5/);
+  assert.match(sw,/app\.js\?v=076b7/);
+  for(const asset of ['logic.mjs','payroll-review.mjs','scheduled-hours.mjs'])assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=076c4`));
+  assert.match(sw,/attendance-core\.mjs\?v=076c5/);
+  assert.match(sw,/extras\.mjs\?v=076m9/);
+  assert.match(sw,/monthly-ui\.mjs\?v=076m6/);
   assert.doesNotMatch(sw,/\?v=074|\?v=073|\?v=072|\?v=071|\?v=070|\?v=064|\?v=061/);
 });
 

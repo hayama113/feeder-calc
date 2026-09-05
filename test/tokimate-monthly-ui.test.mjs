@@ -6,6 +6,7 @@ const ui=readFileSync(new URL('../zangyo36/monthly-ui.mjs',import.meta.url),'utf
 const extras=readFileSync(new URL('../zangyo36/extras.mjs',import.meta.url),'utf8');
 const html=readFileSync(new URL('../zangyo36/index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../zangyo36/app.js',import.meta.url),'utf8');
+const attendance=readFileSync(new URL('../zangyo36/attendance-core.mjs',import.meta.url),'utf8');
 
 test('monthly mobile table keeps clock-in and clock-out visible',()=>{
   assert.match(html,/<th>出勤<\/th><th>退勤<\/th>/);
@@ -62,9 +63,15 @@ test('clock fields keep native time pickers and add four-digit numeric entry',()
   assert.match(app,/時刻は4桁で入力してください/);
 });
 
-test('special leave tags are blue',()=>{
-  assert.match(app,/type==='特休'\?'tag tm-special-leave':'tag'/);
-  assert.match(ui,/\.tm-special-leave\{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd\}/);
+test('monthly rows are colored by work type instead of weekday',()=>{
+  assert.match(app,/workTypeColorClass=type=>type==='特休'\?'tm-work-blue':type==='公休'\?'tm-work-red':type==='有休'\?'tm-work-green':'tm-work-black'/);
+  assert.match(app,/data-work-type="\$\{type\}" class="\$\{rowClass\}"/);
+  assert.match(ui,/tr\.tm-work-blue\{color:#1d4ed8\}/);
+  assert.match(ui,/tr\.tm-work-red\{color:#b91c1c\}/);
+  assert.match(ui,/tr\.tm-work-green\{color:#15803d\}/);
+  assert.match(ui,/tr\.tm-work-black\{color:var\(--text\)\}/);
+  assert.doesNotMatch(attendance,/classList\.toggle\('day-sun'/);
+  assert.doesNotMatch(attendance,/classList\.toggle\('day-sat'/);
 });
 
 test('ordinary workdays stay unset until chosen and clock-ins use work type',()=>{
@@ -95,6 +102,6 @@ test('fortune result requests one short vibration with its sound',()=>{
 });
 
 test('monthly UI module is loaded by TokiMate extras',()=>{
-  assert.match(extras,/monthly-ui\.mjs\?v=076m5/);
+  assert.match(extras,/monthly-ui\.mjs\?v=076m6/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });

@@ -85,7 +85,7 @@
       return;
     }
     try{
-      const appUrl=new URL(`./app.js?v=076b6&recover=${Date.now()}`,location.href);
+      const appUrl=new URL(`./app.js?v=076b7&recover=${Date.now()}`,location.href);
       await import(appUrl.href);
       setTimeout(()=>{
         if(coreLooksReady()){
