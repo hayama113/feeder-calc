@@ -49,13 +49,13 @@
 
   <div class="grid four">
     <div class="metric-card"><span>実労働</span><b id="mActual">0:00</b></div>
-    <div class="metric-card"><span>法定時間外</span><b id="mOt">0:00</b></div>
+    <div class="metric-card"><span>時間外</span><b id="mOt">0:00</b></div>
     <div class="metric-card"><span>深夜</span><b id="mDeep">0:00</b></div>
     <div class="metric-card"><span>日曜勤務</span><b id="mHoliday">0:00</b></div>
   </div>
 
   <div class="grid two">
-    <div class="card"><h2>フレックス清算</h2><div class="flexbar"><div><span>今月の法定総枠</span><b id="flexLimit">--</b></div><div><span>総枠まで</span><b id="flexRemaining">--</b></div></div><div class="bar"><span id="flexProgress"></span></div><p class="helper">毎月1日〜末日の1か月清算。1日8時間超だけでは法定時間外にしません。</p></div>
+    <div class="card"><h2>フレックス清算</h2><div class="flexbar"><div><span>会社規定勤務時間</span><b id="flexLimit">--</b></div><div><span>規定時間まで</span><b id="flexRemaining">--</b></div></div><div class="bar"><span id="flexProgress"></span></div><p class="helper">毎月1日〜末日で集計し、会社規定勤務時間を超えた分を時間外として表示します。</p></div>
     <div class="card"><h2>36協定</h2><div class="big" id="remaining36">--</div><div id="remaining36Reason" class="helper">--</div><div id="breachBox" class="notice danger hidden"></div></div>
   </div>
 
@@ -63,11 +63,11 @@
 </section>
 
 <section id="tab-monthly" class="tab">
-  <div class="card month-head"><div><h2>月間勤務シート</h2><p class="helper">日付をタップすると詳細編集。日曜＝公休、土曜・祝日＝特休を初期表示します。</p></div><select id="monthlyMonth"></select></div>
+  <div class="card month-head"><div><h2>月間勤務シート</h2><p class="helper">左右の矢印で月送り。年月を長押しすると月一覧を表示します。</p></div><div id="monthlyNavigator" class="month-navigator"><button id="monthlyPrev" type="button" aria-label="前の月">‹</button><button id="monthlyPickerButton" type="button" aria-label="年月を長押しして選択">年月</button><button id="monthlyNext" type="button" aria-label="次の月">›</button><select id="monthlyMonth" aria-label="表示月"></select></div></div>
   <div class="grid four">
     <div class="metric-card"><span>実労働</span><b id="sActual">0:00</b></div>
-    <div class="metric-card"><span>法定総枠</span><b id="sLimit">0:00</b></div>
-    <div class="metric-card"><span>法定時間外</span><b id="sOt">0:00</b></div>
+    <div class="metric-card"><span>会社規定勤務時間</span><b id="sLimit">0:00</b></div>
+    <div class="metric-card"><span>時間外</span><b id="sOt">0:00</b></div>
     <div class="metric-card"><span>日曜勤務</span><b id="sHoliday">0:00</b></div>
   </div>
   <div class="card tablewrap"><table class="monthly-table"><thead><tr><th>日</th><th>曜</th><th>種別</th><th>出勤</th><th>退勤</th><th>実働</th><th>深夜</th></tr></thead><tbody id="dailyRows"></tbody></table></div>
@@ -88,8 +88,8 @@
     </form>
   </div>
   <div class="grid two">
-    <div class="card"><h2>2〜6か月平均</h2><div id="avgList" class="mini-grid"></div></div>
-    <div class="card"><h2>36協定判定</h2><div id="statusSummary" class="notice">データを入力すると判定します。</div></div>
+    <details class="tm-rule-details"><summary>2〜6か月平均</summary><div><div id="avgList" class="mini-grid"></div></div></details>
+    <details class="tm-rule-details"><summary>36協定判定</summary><div><div id="statusSummary" class="notice">データを入力すると判定します。</div></div></details>
   </div>
 </section>
 
@@ -97,7 +97,7 @@
   <div class="card month-head"><div><h2>給与・割増賃金の自己検算</h2><p class="helper">1日〜末日を清算し、翌月25日支給の確認用。</p></div><select id="wageMonth"></select></div>
   <div class="grid four">
     <div class="metric-card"><span>計算用時給</span><b id="hourly">¥0</b></div>
-    <div class="metric-card"><span>法定時間外</span><b id="payOt">0:00</b></div>
+    <div class="metric-card"><span>時間外</span><b id="payOt">0:00</b></div>
     <div class="metric-card"><span>手当概算</span><b id="wageTotal">¥0</b></div>
     <div class="metric-card"><span>割増相当額</span><b id="premiumOnly">¥0</b></div>
   </div>
@@ -136,8 +136,8 @@
 <div id="fortuneModal" class="modal hidden"><div class="fortune-stage"><button id="closeFortune" class="modal-close">×</button><img id="fortuneCharacter" src="./characters-v066/shiori.jpg?v=076"><div id="fortuneAnimation" class="fortune-animation"><span id="fortuneIcon">🎋</span><strong id="fortuneAction">おみくじを準備しています…</strong></div><div id="fortuneResult" class="fortune-result hidden"><div id="fortuneRank" class="fortune-rank">大吉</div><p id="fortuneText"></p><small>本日は再抽選できません。結果はいつでも見直せます。</small></div></div></div>
 
 <script src="./navigation.js?v=076"></script>
-<script type="module" src="./app.js?v=076a1"></script>
+<script type="module" src="./app.js?v=076b1"></script>
 <script type="module" src="./fortune-effects.mjs?v=076"></script>
-<script type="module" src="./extras.mjs?v=076m2"></script>
+<script type="module" src="./extras.mjs?v=076m3"></script>
 </body>
 </html>

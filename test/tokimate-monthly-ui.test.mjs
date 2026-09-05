@@ -26,8 +26,24 @@ test('dialog class synchronization cannot retrigger its observer forever',()=>{
 });
 
 test('monthly form uses non-overlapping mobile columns',()=>{
-  assert.match(ui,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/);
+  assert.match(ui,/@media\(max-width:680px\)[\s\S]*?#dayDetailCard\.tm-day-modal \.formgrid\{grid-template-columns:1fr;gap:12px\}/);
   assert.match(ui,/\.formgrid>div\{min-width:0\}/);
+});
+
+test('monthly sheet uses arrow paging and a long-press month picker',()=>{
+  assert.match(html,/id="monthlyPrev"/);
+  assert.match(html,/id="monthlyPickerButton"/);
+  assert.match(html,/id="monthlyNext"/);
+  assert.match(ui,/setTimeout\(\(\)=>\{timer=0;openMonthPicker\(\);\},550\)/);
+  assert.match(ui,/id="tmMonthPickerPanel"/);
+  assert.match(app,/function monthRange\(\)\{let y=2026;return\{start:`\$\{y\}-04`,end:`\$\{y\+10\}-03`/);
+  assert.match(app,/for\(let i=0;i<120;i\+\+\)/);
+  assert.match(app,/\.min=r\.minDate;\$\('#detailDate'\)\.max=r\.maxDate/);
+});
+
+test('rule sections are compact details opened on tap',()=>{
+  assert.match(html,/<details class="tm-rule-details"><summary>2〜6か月平均<\/summary>/);
+  assert.match(html,/<details class="tm-rule-details"><summary>36協定判定<\/summary>/);
 });
 
 test('day editor autosaves and exposes clear instead of save/delete',()=>{
@@ -40,7 +56,11 @@ test('day editor autosaves and exposes clear instead of save/delete',()=>{
   assert.match(app,/勤務内容をクリアしますか/);
 });
 
+test('fortune result requests one short vibration with its sound',()=>{
+  assert.match(app,/function fortuneFeedback\(f\)\{tone\(f\);try\{navigator\.vibrate\?\.\(35\)\}/);
+});
+
 test('monthly UI module is loaded by TokiMate extras',()=>{
-  assert.match(extras,/monthly-ui\.mjs\?v=076m2/);
+  assert.match(extras,/monthly-ui\.mjs\?v=076m3/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });
