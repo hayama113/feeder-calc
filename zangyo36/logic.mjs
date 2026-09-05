@@ -112,7 +112,7 @@ export function companyPrescribedMinutes(monthKey,dailyMinutes=8*MIN){
 export function defaultAttendanceType(dateStr){
   if(isSunday(dateStr)) return '公休';
   if(isSaturday(dateStr)||isJapanHoliday(dateStr)) return '特休';
-  return '日勤';
+  return '出勤';
 }
 
 function allocateWeighted(total,weights){
