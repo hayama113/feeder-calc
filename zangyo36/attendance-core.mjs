@@ -1,4 +1,4 @@
-import {isSunday,isSaturday,isJapanHoliday} from './logic.mjs?v=076c3';
+import {isSunday,isSaturday,isJapanHoliday} from './logic.mjs?v=076c4';
 
 const $=s=>document.querySelector(s);
 

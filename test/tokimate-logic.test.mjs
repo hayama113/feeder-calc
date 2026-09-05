@@ -21,8 +21,8 @@ test('TokiMate Japanese Monday and substitute holidays are correct for 2026',()=
   assert.equal(defaultAttendanceType('2026-01-12'),'特休');
 });
 
-test('TokiMate defaults ordinary weekdays to work and keeps weekends as leave',()=>{
-  assert.equal(defaultAttendanceType('2026-09-01'),'出勤');
+test('TokiMate leaves ordinary weekdays unset and defaults weekends to leave',()=>{
+  assert.equal(defaultAttendanceType('2026-09-01'),'');
   assert.equal(defaultAttendanceType('2026-09-05'),'特休');
   assert.equal(defaultAttendanceType('2026-09-06'),'公休');
 });
