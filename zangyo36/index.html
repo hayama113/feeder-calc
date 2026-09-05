@@ -83,7 +83,8 @@
       <div><label>法定最低休憩（参考）</label><input id="detailStatutoryBreak" type="number" readonly></div>
       <div><label>うち22:00〜翌5:00の休憩（分）</label><input id="detailNightBreak" type="number" min="0"></div>
       <div class="full"><label>メモ</label><input id="detailMemo" maxlength="100" placeholder="例：代休、現場名など"></div>
-      <div class="full actions"><button type="submit" class="primary">保存</button><button id="deleteDay" type="button" class="dangerbtn">削除</button></div>
+      <div id="dayAutoSaveState" class="full helper" role="status" aria-live="polite">変更内容は自動保存されます。</div>
+      <div class="full actions"><button id="deleteDay" type="button" class="dangerbtn">クリア</button></div>
     </form>
   </div>
   <div class="grid two">
@@ -135,7 +136,7 @@
 <div id="fortuneModal" class="modal hidden"><div class="fortune-stage"><button id="closeFortune" class="modal-close">×</button><img id="fortuneCharacter" src="./characters-v066/shiori.jpg?v=076"><div id="fortuneAnimation" class="fortune-animation"><span id="fortuneIcon">🎋</span><strong id="fortuneAction">おみくじを準備しています…</strong></div><div id="fortuneResult" class="fortune-result hidden"><div id="fortuneRank" class="fortune-rank">大吉</div><p id="fortuneText"></p><small>本日は再抽選できません。結果はいつでも見直せます。</small></div></div></div>
 
 <script src="./navigation.js?v=076"></script>
-<script type="module" src="./app.js?v=076"></script>
+<script type="module" src="./app.js?v=076a1"></script>
 <script type="module" src="./fortune-effects.mjs?v=076"></script>
 <script type="module" src="./extras.mjs?v=076m2"></script>
 </body>
