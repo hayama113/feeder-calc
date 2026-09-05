@@ -53,6 +53,6 @@ import('./navigation.js?v=076').catch(e=>console.error('navigation fallback load
 import('./attendance-core.mjs?v=076c5').catch(e=>console.error('attendance core load failed',e));
 import('./character-motion.mjs?v=068').catch(e=>console.error('character motion load failed',e));
 import('./salary-basis.mjs?v=076').catch(e=>console.error('salary basis load failed',e));
-import('./payroll-review.mjs?v=076c4').catch(e=>console.error('payroll review load failed',e));
+import('./payroll-review.mjs?v=076p1').catch(e=>console.error('payroll review load failed',e));
 import('./scheduled-hours.mjs?v=076c4').catch(e=>console.error('scheduled hours load failed',e));
 import('./monthly-ui.mjs?v=076m6').catch(e=>console.error('monthly UI load failed',e));

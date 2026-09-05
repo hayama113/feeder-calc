@@ -1,4 +1,5 @@
 import {classifyFlexMonth,wageEstimate,fmtMinutes} from './logic.mjs?v=076c4';
+import {restoredTotal,companyTotal,comparison} from './payslip-comparison.mjs?v=076p1';
 
 const $=s=>document.querySelector(s);
 const DB_NAME='zangyo36_db';
@@ -101,20 +102,17 @@ function installBreakdownUI(){
   card.appendChild(box);
 }
 
-function num(id){const v=$('#'+id)?.value;return v===''||v==null?null:Math.max(0,Number(v)||0);}
+function num(id){const input=$('#'+id),v=input?.value;if(input?.validity.badInput)throw new Error('明細額は数値で入力してください。');return v===''||v==null?null:Number(v);}
 function selectedCompanyTotal(){
-  const explicit=num('tmActualTotal');
-  if(explicit!=null)return explicit;
-  const vals=['tmActualOvertime','tmActualDeep','tmActualHoliday'].map(num);
-  if(vals.every(v=>v==null))return null;
-  return vals.reduce((s,v)=>s+(v||0),0);
+  return companyTotal({actualTotal:num('tmActualTotal'),actualOvertime:num('tmActualOvertime'),actualDeep:num('tmActualDeep'),actualHoliday:num('tmActualHoliday')});
 }
 function recalcComparison(){
   const app=Number($('#tmPayrollReview')?.dataset.appTotal)||0;
-  const company=selectedCompanyTotal();
+  let company;
+  try{company=selectedCompanyTotal();}catch(e){$('#tmCompanyAllowance').textContent='—';$('#tmAllowanceDiff').textContent='—';$('#tmAllowanceStatus').textContent=e.message;return;}
   $('#tmAppAllowance').textContent=yen(app);
   if(company==null){$('#tmCompanyAllowance').textContent='—';$('#tmAllowanceDiff').textContent='—';$('#tmAllowanceStatus').textContent='会社明細を入力すると比較します。';return;}
-  const diff=company-app;
+  const diff=comparison(app,company).difference;
   $('#tmCompanyAllowance').textContent=yen(company);
   $('#tmAllowanceDiff').textContent=(diff>0?'+':'')+yen(diff);
   const abs=Math.abs(Math.round(diff));
@@ -146,12 +144,17 @@ async function render(){
   $('#tmActualOvertime').value=payslip?.actualOvertime??'';
   $('#tmActualDeep').value=payslip?.actualDeep??'';
   $('#tmActualHoliday').value=payslip?.actualHoliday??'';
-  $('#tmActualTotal').value=payslip?.actualTotal??payslip?.actualAllowance??'';
+  $('#tmActualTotal').value=restoredTotal(payslip)??'';
   $('#tmPayslipSaveState').textContent='';
   recalcComparison();
 }
 
 async function persistCurrent(){
+  const button=$('#tmSavePayslip');
+  if(button.disabled)return;
+  button.disabled=true;
+  $('#tmPayslipSaveState').textContent='保存中…';
+  try{
   const monthKey=$('#wageMonth')?.value;
   if(!monthKey)return;
   const company=selectedCompanyTotal();
@@ -165,9 +168,12 @@ async function persistCurrent(){
     updatedAt:new Date().toISOString()
   };
   await savePayslip(row);
+  if($('#wageMonth')?.value!==monthKey)return;
   const state=$('#tmPayslipSaveState'); if(state)state.textContent='保存しました。';
   const legacy=$('#actualAllowance'); if(legacy)legacy.value=company??'';
   recalcComparison();
+  }catch(e){$('#tmPayslipSaveState').textContent=`保存できませんでした。${e.message||'再試行してください。'}`;}
+  finally{button.disabled=false;}
 }
 
 function scheduleRender(){setTimeout(()=>render().catch(e=>console.error('payroll review render failed',e)),40);}
