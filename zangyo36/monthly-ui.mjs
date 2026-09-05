@@ -67,7 +67,7 @@ function syncDialog(){
   const card=$('#dayDetailCard'),backdrop=ensureBackdrop();
   if(!card)return;
   const open=!card.classList.contains('hidden');
-  card.classList.add('tm-day-modal');
+  // The observer below watches this same attribute. Avoid writing an\n  // unchanged class value, otherwise WebKit can enqueue syncDialog forever.\n  if(!card.classList.contains('tm-day-modal'))card.classList.add('tm-day-modal');
   card.setAttribute('role','dialog');
   card.setAttribute('aria-modal','true');
   card.setAttribute('aria-labelledby','detailTitle');
