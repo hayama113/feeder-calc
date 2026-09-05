@@ -1,8 +1,8 @@
-const CACHE_NAME='zangyo36-v0.7.6-manual-work-type7';
+const CACHE_NAME='zangyo36-v0.7.6-work-type-colors8';
 const CHARACTER_IDS=['shiori','carrie','takeru','seojun','maru','robotan'];
 const CHARACTER_ROOT='./characters-v066/';
 const CHARACTERS=CHARACTER_IDS.map(id=>`${CHARACTER_ROOT}${id}.jpg?v=076`);
-const ASSETS=['./','./index.html','./styles.css?v=076','./fortune-effects.css?v=076','./app.js?v=076b6','./fortune-effects.mjs?v=076','./logic.mjs?v=076c4','./extras.mjs?v=076m8','./navigation.js?v=076','./attendance-core.mjs?v=076c4','./character-motion.mjs?v=076','./salary-basis.mjs?v=076','./payroll-review.mjs?v=076c4','./scheduled-hours.mjs?v=076c4','./monthly-ui.mjs?v=076m5','./manifest.webmanifest','./icon.svg',...CHARACTERS];
+const ASSETS=['./','./index.html','./styles.css?v=076','./fortune-effects.css?v=076','./app.js?v=076b7','./fortune-effects.mjs?v=076','./logic.mjs?v=076c4','./extras.mjs?v=076m9','./navigation.js?v=076','./attendance-core.mjs?v=076c5','./character-motion.mjs?v=076','./salary-basis.mjs?v=076','./payroll-review.mjs?v=076c4','./scheduled-hours.mjs?v=076c4','./monthly-ui.mjs?v=076m6','./manifest.webmanifest','./icon.svg',...CHARACTERS];
 
 self.addEventListener('install',e=>e.waitUntil(
   caches.open(CACHE_NAME).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())

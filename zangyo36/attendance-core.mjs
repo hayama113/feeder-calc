@@ -1,5 +1,3 @@
-import {isSunday,isSaturday,isJapanHoliday} from './logic.mjs?v=076c4';
-
 const $=s=>document.querySelector(s);
 
 function installRuleCard(){
@@ -17,15 +15,8 @@ function installRuleCard(){
 
 function decorateRows(){
   document.querySelectorAll('#dailyRows tr[data-day]').forEach(row=>{
-    const date=row.dataset.day;
-    if(!date) return;
-    row.classList.toggle('day-sun',isSunday(date));
-    row.classList.toggle('day-sat',isSaturday(date));
-    const holiday=isJapanHoliday(date);
-    if(isSunday(date)) row.title='日曜：法定休日';
-    else if(isSaturday(date)) row.title='土曜：特休（非法定休日）';
-    else if(holiday) row.title='祝日：特休（非法定休日）';
-    else row.removeAttribute('title');
+    row.classList.remove('day-sun','day-sat');
+    row.title=`勤務種別：${row.dataset.workType||'未入力'}`;
   });
 }
 
@@ -37,7 +28,7 @@ function installLegend(){
   legend.id='tmAttendanceLegend';
   legend.className='helper';
   legend.style.margin='-4px 4px 12px';
-  legend.textContent='日曜＝法定休日 ／ 土曜・祝日＝特休（非法定休日） ／ 夜勤・月またぎは日付単位で分割集計';
+  legend.textContent='勤務種別の色：特休＝青 ／ 公休＝赤 ／ 有休＝緑 ／ その他＝黒';
   table.insertAdjacentElement('afterend',legend);
 }
 
