@@ -1,4 +1,4 @@
-const CACHE_NAME='zangyo36-v0.7.6-manual-time3';
+const CACHE_NAME='zangyo36-v0.7.6-summary-order4';
 const CHARACTER_IDS=['shiori','carrie','takeru','seojun','maru','robotan'];
 const CHARACTER_ROOT='./characters-v066/';
 const CHARACTERS=CHARACTER_IDS.map(id=>`${CHARACTER_ROOT}${id}.jpg?v=076`);

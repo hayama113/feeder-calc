@@ -41,7 +41,7 @@ test('TokiMate core modules do not pin stale cache versions',()=>{
 
 test('TokiMate PWA precache uses current release URLs',()=>{
   const sw=read('zangyo36/sw.js');
-  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6-manual-time3'/);
+  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6-summary-order4'/);
   for(const asset of ['navigation.js','salary-basis.mjs']){
     assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=${VERSION}`));
   }

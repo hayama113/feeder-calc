@@ -43,7 +43,7 @@ test('monthly sheet uses arrow paging and a long-press month picker',()=>{
 
 test('monthly summary orders remaining required hours before overtime',()=>{
   assert.doesNotMatch(html,/左右の矢印で月送り。年月を長押しすると月一覧を表示します。/);
-  assert.match(html,/会社規定勤務時間[\s\S]*残労働時間（規定－実労働）[\s\S]*id="sRemaining"[\s\S]*時間外[\s\S]*id="sOt"/);
+  assert.match(html,/実労働[\s\S]*残労働時間（規定－実労働）[\s\S]*会社規定勤務時間[\s\S]*時間外/);
   assert.match(html,/id="sRemaining"/);
   assert.doesNotMatch(html,/id="sHoliday"/);
   assert.match(app,/sRemaining'\)\.textContent=fmtMinutes\(Math\.max\(0,m\.companyLimit-m\.actual\)\)/);
