@@ -41,12 +41,25 @@ test('monthly sheet uses arrow paging and a long-press month picker',()=>{
   assert.match(app,/\.min=r\.minDate;\$\('#detailDate'\)\.max=r\.maxDate/);
 });
 
-test('monthly summary shows remaining required hours and no explanatory sentence',()=>{
+test('monthly summary orders remaining required hours before overtime',()=>{
   assert.doesNotMatch(html,/左右の矢印で月送り。年月を長押しすると月一覧を表示します。/);
-  assert.match(html,/あと必要（規定－実労働）/);
+  assert.match(html,/会社規定勤務時間[\s\S]*残労働時間（規定－実労働）[\s\S]*id="sRemaining"[\s\S]*時間外[\s\S]*id="sOt"/);
   assert.match(html,/id="sRemaining"/);
   assert.doesNotMatch(html,/id="sHoliday"/);
   assert.match(app,/sRemaining'\)\.textContent=fmtMinutes\(Math\.max\(0,m\.companyLimit-m\.actual\)\)/);
+});
+
+test('clock fields keep native time pickers and add four-digit numeric entry',()=>{
+  for(const id of ['detailStart','detailEnd']){
+    assert.match(html,new RegExp(`id="${id}" type="time"`));
+    assert.match(html,new RegExp(`id="${id}Manual"[^>]*inputmode="numeric"[^>]*maxlength="4"`));
+  }
+  assert.match(app,/function parseManualTime\(value\)/);
+  assert.match(app,/digits\.length!==4/);
+  assert.match(app,/h<24&&m<60/);
+  assert.match(app,/syncManualTime\('detailStart','detailStartManual'\)/);
+  assert.match(app,/applyManualTime\(manualId,timeId\)/);
+  assert.match(app,/時刻は4桁で入力してください/);
 });
 
 test('special leave tags are blue',()=>{
@@ -74,6 +87,6 @@ test('fortune result requests one short vibration with its sound',()=>{
 });
 
 test('monthly UI module is loaded by TokiMate extras',()=>{
-  assert.match(extras,/monthly-ui\.mjs\?v=076m4/);
+  assert.match(extras,/monthly-ui\.mjs\?v=076m5/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });
