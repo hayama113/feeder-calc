@@ -67,9 +67,10 @@ test('special leave tags are blue',()=>{
   assert.match(ui,/\.tm-special-leave\{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd\}/);
 });
 
-test('ordinary workdays and new clock-ins use day shift',()=>{
-  assert.match(app,/TYPES=\['日勤','特休','公休'/);
-  assert.match(app,/type:'日勤',start:t/);
+test('ordinary workdays and new clock-ins use work type',()=>{
+  assert.match(app,/TYPES=\['出勤','特休','公休','非番','有休','出勤日','忌引き','その他'\]/);
+  assert.match(app,/type:'出勤',start:t/);
+  assert.match(app,/type==='日勤'\?'出勤':type/);
 });
 
 test('rule sections are compact details opened on tap',()=>{
