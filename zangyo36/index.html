@@ -63,12 +63,12 @@
 </section>
 
 <section id="tab-monthly" class="tab">
-  <div class="card month-head"><div><h2>月間勤務シート</h2><p class="helper">左右の矢印で月送り。年月を長押しすると月一覧を表示します。</p></div><div id="monthlyNavigator" class="month-navigator"><button id="monthlyPrev" type="button" aria-label="前の月">‹</button><button id="monthlyPickerButton" type="button" aria-label="年月を長押しして選択">年月</button><button id="monthlyNext" type="button" aria-label="次の月">›</button><select id="monthlyMonth" aria-label="表示月"></select></div></div>
+  <div class="card month-head"><div><h2>月間勤務シート</h2></div><div id="monthlyNavigator" class="month-navigator"><button id="monthlyPrev" type="button" aria-label="前の月">‹</button><button id="monthlyPickerButton" type="button" aria-label="年月を長押しして選択">年月</button><button id="monthlyNext" type="button" aria-label="次の月">›</button><select id="monthlyMonth" aria-label="表示月"></select></div></div>
   <div class="grid four">
     <div class="metric-card"><span>実労働</span><b id="sActual">0:00</b></div>
     <div class="metric-card"><span>会社規定勤務時間</span><b id="sLimit">0:00</b></div>
     <div class="metric-card"><span>時間外</span><b id="sOt">0:00</b></div>
-    <div class="metric-card"><span>日曜勤務</span><b id="sHoliday">0:00</b></div>
+    <div class="metric-card"><span>あと必要（規定－実労働）</span><b id="sRemaining">0:00</b></div>
   </div>
   <div class="card tablewrap"><table class="monthly-table"><thead><tr><th>日</th><th>曜</th><th>種別</th><th>出勤</th><th>退勤</th><th>実働</th><th>深夜</th></tr></thead><tbody id="dailyRows"></tbody></table></div>
   <div id="dayDetailCard" class="card hidden">
@@ -136,8 +136,8 @@
 <div id="fortuneModal" class="modal hidden"><div class="fortune-stage"><button id="closeFortune" class="modal-close">×</button><img id="fortuneCharacter" src="./characters-v066/shiori.jpg?v=076"><div id="fortuneAnimation" class="fortune-animation"><span id="fortuneIcon">🎋</span><strong id="fortuneAction">おみくじを準備しています…</strong></div><div id="fortuneResult" class="fortune-result hidden"><div id="fortuneRank" class="fortune-rank">大吉</div><p id="fortuneText"></p><small>本日は再抽選できません。結果はいつでも見直せます。</small></div></div></div>
 
 <script src="./navigation.js?v=076"></script>
-<script type="module" src="./app.js?v=076b1"></script>
+<script type="module" src="./app.js?v=076b2"></script>
 <script type="module" src="./fortune-effects.mjs?v=076"></script>
-<script type="module" src="./extras.mjs?v=076m3"></script>
+<script type="module" src="./extras.mjs?v=076m4"></script>
 </body>
 </html>
