@@ -19,7 +19,7 @@ test('day detail is presented as an immediate modal dialog',()=>{
   assert.match(ui,/Escape/);
 });
 
-test('monthly UI module is loaded by TokiMate extras',()=>{
+test('dialog class synchronization cannot retrigger its observer forever',()=>{\n  assert.match(ui,/if\\(!card\\.classList\\.contains\\('tm-day-modal'\\)\\)card\\.classList\\.add\\('tm-day-modal'\\)/);\n  assert.doesNotMatch(ui,/\\n\\s*card\\.classList\\.add\\('tm-day-modal'\\);/);\n});\n\ntest('monthly UI module is loaded by TokiMate extras',()=>{
   assert.match(extras,/monthly-ui\.mjs\?v=076m1/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });
