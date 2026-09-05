@@ -1,4 +1,4 @@
-import {companyScheduledWorkdays,companyPrescribedMinutes,fmtMinutes} from './logic.mjs?v=076c1';
+import {companyScheduledWorkdays,companyPrescribedMinutes,fmtMinutes} from './logic.mjs?v=076c2';
 
 export const STANDARD_DAILY_MINUTES=8*60;
 
