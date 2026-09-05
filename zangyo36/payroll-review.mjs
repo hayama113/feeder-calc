@@ -1,4 +1,4 @@
-import {classifyFlexMonth,wageEstimate,fmtMinutes} from './logic.mjs?v=076c1';
+import {classifyFlexMonth,wageEstimate,fmtMinutes} from './logic.mjs?v=076c2';
 
 const $=s=>document.querySelector(s);
 const DB_NAME='zangyo36_db';

@@ -21,6 +21,12 @@ test('TokiMate Japanese Monday and substitute holidays are correct for 2026',()=
   assert.equal(defaultAttendanceType('2026-01-12'),'特休');
 });
 
+test('TokiMate defaults ordinary weekdays to day shift and keeps weekends as leave',()=>{
+  assert.equal(defaultAttendanceType('2026-09-01'),'日勤');
+  assert.equal(defaultAttendanceType('2026-09-05'),'特休');
+  assert.equal(defaultAttendanceType('2026-09-06'),'公休');
+});
+
 test('TokiMate same-minute clock-in/out is zero duration, not 24 hours',()=>{
   const e={date:'2026-09-05',start:'00:44',end:'00:44',breakMinutes:60,nightBreakMinutes:0};
   assert.equal(grossShiftMinutes(e.start,e.end),0);

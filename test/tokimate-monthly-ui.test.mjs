@@ -67,6 +67,11 @@ test('special leave tags are blue',()=>{
   assert.match(ui,/\.tm-special-leave\{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd\}/);
 });
 
+test('ordinary workdays and new clock-ins use day shift',()=>{
+  assert.match(app,/TYPES=\['日勤','特休','公休'/);
+  assert.match(app,/type:'日勤',start:t/);
+});
+
 test('rule sections are compact details opened on tap',()=>{
   assert.match(html,/<details class="tm-rule-details"><summary>2〜6か月平均<\/summary>/);
   assert.match(html,/<details class="tm-rule-details"><summary>36協定判定<\/summary>/);
