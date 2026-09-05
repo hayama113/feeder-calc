@@ -24,7 +24,9 @@ function installStyles(){
       #tab-monthly .monthly-table th:nth-child(n+6),#tab-monthly .monthly-table td:nth-child(n+6){display:none}
       #dayDetailCard.tm-day-modal{top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);width:calc(100vw - 20px);max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(12px,env(safe-area-inset-bottom)));border-radius:18px;padding:14px}
       #dayDetailCard.tm-day-modal .detail-head{top:-14px;padding:14px 0 9px}
-      #dayDetailCard.tm-day-modal .formgrid{grid-template-columns:1fr 1fr}
+      #dayDetailCard.tm-day-modal .formgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+      #dayDetailCard.tm-day-modal .formgrid>div{min-width:0}
+      #dayDetailCard.tm-day-modal .formgrid input,#dayDetailCard.tm-day-modal .formgrid select{min-width:0}
       #dayDetailCard.tm-day-modal .formgrid .full{grid-column:1/-1}
       #dayDetailCard.tm-day-modal .actions{position:sticky;bottom:-14px;background:var(--card);padding:10px 0 14px;margin-bottom:-14px;border-top:1px solid var(--line)}
       #dayDetailCard.tm-day-modal .actions button{flex:1}

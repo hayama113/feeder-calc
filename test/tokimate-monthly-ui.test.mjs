@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 const ui=readFileSync(new URL('../zangyo36/monthly-ui.mjs',import.meta.url),'utf8');
 const extras=readFileSync(new URL('../zangyo36/extras.mjs',import.meta.url),'utf8');
 const html=readFileSync(new URL('../zangyo36/index.html',import.meta.url),'utf8');
+const app=readFileSync(new URL('../zangyo36/app.js',import.meta.url),'utf8');
 
 test('monthly mobile table keeps clock-in and clock-out visible',()=>{
   assert.match(html,/<th>出勤<\/th><th>退勤<\/th>/);
@@ -19,7 +20,27 @@ test('day detail is presented as an immediate modal dialog',()=>{
   assert.match(ui,/Escape/);
 });
 
-test('dialog class synchronization cannot retrigger its observer forever',()=>{\n  assert.match(ui,/if\\(!card\\.classList\\.contains\\('tm-day-modal'\\)\\)card\\.classList\\.add\\('tm-day-modal'\\)/);\n  assert.doesNotMatch(ui,/\\n\\s*card\\.classList\\.add\\('tm-day-modal'\\);/);\n});\n\ntest('monthly UI module is loaded by TokiMate extras',()=>{
-  assert.match(extras,/monthly-ui\.mjs\?v=076m1/);
+test('dialog class synchronization cannot retrigger its observer forever',()=>{
+  assert.match(ui,/if\(!card\.classList\.contains\('tm-day-modal'\)\)card\.classList\.add\('tm-day-modal'\)/);
+  assert.doesNotMatch(ui,/\n\s*card\.classList\.add\('tm-day-modal'\);/);
+});
+
+test('monthly form uses non-overlapping mobile columns',()=>{
+  assert.match(ui,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/);
+  assert.match(ui,/\.formgrid>div\{min-width:0\}/);
+});
+
+test('day editor autosaves and exposes clear instead of save/delete',()=>{
+  assert.match(html,/id="dayAutoSaveState"/);
+  assert.doesNotMatch(html,/<button type="submit" class="primary">保存<\/button>/);
+  assert.match(html,/id="deleteDay"[^>]*>クリア<\/button>/);
+  assert.match(app,/function queueDayAutoSave\(\)/);
+  assert.match(app,/setTimeout\(\(\)=>\{detailSaveQueue=.*\},300\)/);
+  assert.match(app,/detailDate'\)\.onchange=.*detailWorkType'\)\.onchange=queueDayAutoSave/);
+  assert.match(app,/勤務内容をクリアしますか/);
+});
+
+test('monthly UI module is loaded by TokiMate extras',()=>{
+  assert.match(extras,/monthly-ui\.mjs\?v=076m2/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
 });
