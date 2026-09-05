@@ -93,6 +93,22 @@ export function isJapanHoliday(dateStr){
   return holidayCache.get(y).has(dateStr);
 }
 
+export function companyScheduledWorkdays(monthKey){
+  const [year,month]=String(monthKey||'').split('-').map(Number);
+  if(!year||!month)return [];
+  const out=[];
+  for(let day=1;day<=daysInMonth(monthKey);day++){
+    const date=iso(year,month,day);
+    if(isSunday(date)||isSaturday(date)||isJapanHoliday(date))continue;
+    out.push(date);
+  }
+  return out;
+}
+
+export function companyPrescribedMinutes(monthKey,dailyMinutes=8*MIN){
+  return companyScheduledWorkdays(monthKey).length*Math.max(0,Number(dailyMinutes)||0);
+}
+
 export function defaultAttendanceType(dateStr){
   if(isSunday(dateStr)) return '公休';
   if(isSaturday(dateStr)||isJapanHoliday(dateStr)) return '特休';
@@ -190,8 +206,10 @@ export function classifyFlexMonth(entries,key){
   }
   const nonHolidayWork=Math.max(0,actual-legalHoliday);
   const legalLimit=flexLegalLimitMinutes(key);
-  const overtime=Math.max(0,nonHolidayWork-legalLimit);
-  return {rows:detailed,actual,nonHolidayWork,legalHoliday,deep,holidayDeep,legalLimit,overtime,combined:overtime+legalHoliday};
+  const companyLimit=companyPrescribedMinutes(key);
+  const legalOvertime=Math.max(0,nonHolidayWork-legalLimit);
+  const companyOvertime=Math.max(0,nonHolidayWork-companyLimit);
+  return {rows:detailed,actual,nonHolidayWork,legalHoliday,deep,holidayDeep,legalLimit,companyLimit,legalOvertime,companyOvertime,overtime:companyOvertime,combined:legalOvertime+legalHoliday};
 }
 
 export function addMonths(key,delta){
@@ -212,8 +230,8 @@ export function limitStatus(entries,currentMonth,settings={}){
   const period=agreementPeriodForMonth(currentMonth,Number(settings.agreementStartMonth)||4);
   const monthly=period.months.map(key=>({key,...classifyFlexMonth(entries,key)}));
   const current=monthly.find(m=>m.key===currentMonth)||{...classifyFlexMonth(entries,currentMonth),key:currentMonth};
-  const annualOT=monthly.reduce((s,m)=>s+m.overtime,0);
-  const over45Count=monthly.filter(m=>m.overtime>45*MIN).length;
+  const annualOT=monthly.reduce((s,m)=>s+m.legalOvertime,0);
+  const over45Count=monthly.filter(m=>m.legalOvertime>45*MIN).length;
   const idx=period.months.indexOf(currentMonth),averages=[];
   for(let n=2;n<=6;n++){
     if(idx-(n-1)<0) continue;
@@ -223,12 +241,12 @@ export function limitStatus(entries,currentMonth,settings={}){
 
   const disaster=!!settings.disasterRestoration;
   const candidates=[];
-  if(current.overtime<45*MIN)candidates.push({label:'月45h（原則）',minutes:45*MIN-current.overtime});
+  if(current.legalOvertime<45*MIN)candidates.push({label:'月45h（原則）',minutes:45*MIN-current.legalOvertime});
   if(annualOT<360*MIN)candidates.push({label:'年360h（原則）',minutes:360*MIN-annualOT});
   if(!disaster)candidates.push({label:'単月100h未満',minutes:Math.max(0,100*MIN-1-current.combined)});
   candidates.push({label:'年720h',minutes:Math.max(0,720*MIN-annualOT)});
-  const priorOver45=monthly.filter((m,i)=>i!==idx&&m.overtime>45*MIN).length;
-  if(priorOver45>=6)candidates.push({label:'45h超は年6か月まで',minutes:Math.max(0,45*MIN-current.overtime)});
+  const priorOver45=monthly.filter((m,i)=>i!==idx&&m.legalOvertime>45*MIN).length;
+  if(priorOver45>=6)candidates.push({label:'45h超は年6か月まで',minutes:Math.max(0,45*MIN-current.legalOvertime)});
   if(!disaster){
     for(let n=2;n<=6;n++){
       if(idx-(n-1)<0) continue;
@@ -244,7 +262,7 @@ export function limitStatus(entries,currentMonth,settings={}){
   if(!disaster&&current.combined>=100*MIN)hardBreaches.push('単月100時間未満を満たさない');
   if(!disaster)averages.filter(a=>a.minutes>80*MIN).forEach(a=>hardBreaches.push(`${a.n}か月平均80時間超`));
   const warnings=[];
-  if(current.overtime>45*MIN)warnings.push('月45時間超：特別条項の適用可否を確認');
+  if(current.legalOvertime>45*MIN)warnings.push('月45時間超：特別条項の適用可否を確認');
   if(annualOT>360*MIN)warnings.push('年360時間超：特別条項の適用可否を確認');
   const breaches=[...hardBreaches,...warnings];
   return {current,period,monthly,annualOT,over45Count,averages,tightest,breaches,hardBreaches,warnings};

@@ -1,4 +1,4 @@
-import {isSunday,isSaturday,isJapanHoliday} from './logic.mjs?v=076';
+import {isSunday,isSaturday,isJapanHoliday} from './logic.mjs?v=076c1';
 
 const $=s=>document.querySelector(s);
 
@@ -6,12 +6,12 @@ function installRuleCard(){
   if($('#tmAttendanceCoreNote')) return;
   const anchor=$('#tab-monthly .month-head');
   if(!anchor) return;
-  const card=document.createElement('div');
+  const card=document.createElement('details');
   card.id='tmAttendanceCoreNote';
-  card.className='card notice';
-  card.innerHTML=`<strong>勤怠集計ルール</strong><br>
+  card.className='tm-rule-details';
+  card.innerHTML=`<summary>勤怠集計ルール</summary><div>
     フレックスは毎月1日〜末日で清算。日曜の0:00〜24:00を法定休日として別計上し、土曜・日本の祝日は特休（非法定休日）として扱います。<br>
-    夜勤は日付境界で分割し、月をまたぐ勤務も各月へ分けて集計します。月またぎ・日曜またぎで休憩の時刻が未指定の場合、通常休憩は各日区間の勤務時間比で按分します。`;
+    夜勤は日付境界で分割し、月をまたぐ勤務も各月へ分けて集計します。月またぎ・日曜またぎで休憩の時刻が未指定の場合、通常休憩は各日区間の勤務時間比で按分します。</div>`;
   anchor.insertAdjacentElement('afterend',card);
 }
 

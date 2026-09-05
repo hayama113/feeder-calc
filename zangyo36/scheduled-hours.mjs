@@ -1,22 +1,13 @@
-import {isSunday,isSaturday,isJapanHoliday,fmtMinutes} from './logic.mjs?v=076';
+import {companyScheduledWorkdays,companyPrescribedMinutes,fmtMinutes} from './logic.mjs?v=076c1';
 
 export const STANDARD_DAILY_MINUTES=8*60;
 
 export function scheduledWorkdays(monthKey){
-  const [year,month]=String(monthKey||'').split('-').map(Number);
-  if(!year||!month)return [];
-  const days=new Date(year,month,0).getDate();
-  const out=[];
-  for(let d=1;d<=days;d++){
-    const date=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if(isSunday(date)||isSaturday(date)||isJapanHoliday(date))continue;
-    out.push(date);
-  }
-  return out;
+  return companyScheduledWorkdays(monthKey);
 }
 
 export function prescribedMonthlyMinutes(monthKey,dailyMinutes=STANDARD_DAILY_MINUTES){
-  return scheduledWorkdays(monthKey).length*Math.max(0,Number(dailyMinutes)||0);
+  return companyPrescribedMinutes(monthKey,dailyMinutes);
 }
 
 function currentMonthKey(){
@@ -29,15 +20,14 @@ function installMonthlyNote(){
   const card=limit?.closest('.metric-card');
   if(card){
     const label=card.querySelector('span');
-    if(label)label.textContent='法定総枠（法令）';
+    if(label)label.textContent='会社規定勤務時間';
   }
   if(document.getElementById('tmPrescribedMonthNote'))return;
   const grid=document.querySelector('#tab-monthly .grid.four');
   if(!grid)return;
   const note=document.createElement('div');
   note.id='tmPrescribedMonthNote';
-  note.className='notice';
-  note.style.margin='0 0 12px';
+  note.className='tm-rule-details';
   grid.insertAdjacentElement('afterend',note);
 }
 
@@ -59,11 +49,11 @@ function renderFor(monthKey){
   const prescribed=workdays.length*STANDARD_DAILY_MINUTES;
   const monthNote=document.getElementById('tmPrescribedMonthNote');
   if(monthNote){
-    monthNote.innerHTML=`<strong>会社所定労働時間</strong><br>${key.replace('-','年')}月：${workdays.length}日 × 8:00 ＝ <b>${fmtMinutes(prescribed)}</b>。土曜・日曜・国民の祝日・休日は所定勤務日から除外します。<br><span class="helper">「法定総枠」はフレックスタイム制の法令上の上限で、暦日数から算定するため別表示です。</span>`;
+    monthNote.innerHTML=`<details><summary>会社規定勤務時間の算定</summary><div>${key.replace('-','年')}月：${workdays.length}日 × 8:00 ＝ <b>${fmtMinutes(prescribed)}</b><br><span class="helper">土曜・日曜・国民の祝日・休日を勤務日から除外し、この時間を超えた分を「時間外」と表示します。</span></div></details>`;
   }
   const todayNote=document.getElementById('tmPrescribedTodayNote');
   if(todayNote&&key===currentMonthKey()){
-    todayNote.innerHTML=`会社所定：<b>${fmtMinutes(prescribed)}</b>（${workdays.length}日 × 8:00、土日・祝日除外）／ 法定総枠は別基準です。`;
+    todayNote.innerHTML=`会社規定勤務時間：<b>${fmtMinutes(prescribed)}</b>（${workdays.length}日 × 8:00）`;
   }
 }
 

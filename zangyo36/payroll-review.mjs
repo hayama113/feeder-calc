@@ -1,4 +1,4 @@
-import {classifyFlexMonth,wageEstimate,fmtMinutes} from './logic.mjs?v=076';
+import {classifyFlexMonth,wageEstimate,fmtMinutes} from './logic.mjs?v=076c1';
 
 const $=s=>document.querySelector(s);
 const DB_NAME='zangyo36_db';
@@ -97,7 +97,7 @@ function installBreakdownUI(){
   breakdown.classList.add('tm-pay-legacy');
   const box=document.createElement('div');
   box.id='tmPayrollBreakdown';
-  box.innerHTML=`<div class="tm-payroll-meta"><div><span>計算基礎月額</span><b id="tmWageBase">¥0</b></div><div><span>月平均所定労働時間</span><b id="tmAvgHours">0h</b></div><div><span>基礎時給</span><b id="tmHourlyBasis">¥0</b></div></div><div id="tmBreakdownRows" class="tm-pay-breakdown"></div><p class="helper">当月の会社所定時間ではなく、給与設定の「月平均所定労働時間」を時給換算に使用します。</p>`;
+  box.innerHTML=`<div class="tm-payroll-meta"><div><span>計算基礎月額</span><b id="tmWageBase">¥0</b></div><div><span>月平均所定労働時間</span><b id="tmAvgHours">0h</b></div><div><span>基礎時給</span><b id="tmHourlyBasis">¥0</b></div></div><div id="tmBreakdownRows" class="tm-pay-breakdown"></div><p class="helper">当月の会社規定勤務時間ではなく、給与設定の「月平均所定労働時間」を時給換算に使用します。</p>`;
   card.appendChild(box);
 }
 
@@ -137,8 +137,8 @@ async function render(){
   $('#tmAvgHours').textContent=`${avgHours.toFixed(avgHours%1?1:0)}h`;
   $('#tmHourlyBasis').textContent=yen(a.hourly);
   $('#tmBreakdownRows').innerHTML=`
-    <div class="tm-pay-row"><div><span>法定時間外 60h以下</span>${a.ot60.toFixed(2)}h × 基礎時給 × 1.25</div><b>${yen(a.ot60Amount)}</b></div>
-    <div class="tm-pay-row"><div><span>法定時間外 60h超</span>${a.otOver.toFixed(2)}h × 基礎時給 × 1.50</div><b>${yen(a.otOverAmount)}</b></div>
+    <div class="tm-pay-row"><div><span>時間外 60h以下</span>${a.ot60.toFixed(2)}h × 基礎時給 × 1.25</div><b>${yen(a.ot60Amount)}</b></div>
+    <div class="tm-pay-row"><div><span>時間外 60h超</span>${a.otOver.toFixed(2)}h × 基礎時給 × 1.50</div><b>${yen(a.otOverAmount)}</b></div>
     <div class="tm-pay-row"><div><span>深夜割増（22:00〜5:00）</span>${a.deepH.toFixed(2)}h × 基礎時給 × 0.25</div><b>${yen(a.deepAmount)}</b></div>
     <div class="tm-pay-row"><div><span>法定休日（日曜）</span>${a.holidayH.toFixed(2)}h × 基礎時給 × 1.35</div><b>${yen(a.holidayAmount)}</b></div>
     <div class="tm-pay-row"><div><span>法定休日の深夜加算</span>${a.holidayDeepH.toFixed(2)}h × 基礎時給 × 0.25</div><b>${yen(a.holidayDeepAmount)}</b></div>`;

@@ -31,22 +31,24 @@ test('TokiMate core modules do not pin stale cache versions',()=>{
   assert.match(app,/logic\.mjs\?v=076/);
   assert.match(app,/sw\.js\?v=076/);
   assert.match(attendance,/logic\.mjs\?v=076/);
-  assert.match(nav,/app\.js\?v=076a1/);
+  assert.match(nav,/app\.js\?v=076b1/);
   assert.match(extras,/APP_VERSION='v0\.7\.6'/);
-  assert.match(extras,/attendance-core\.mjs\?v=076/);
+  assert.match(extras,/attendance-core\.mjs\?v=076c1/);
   assert.match(extras,/salary-basis\.mjs\?v=076/);
-  assert.match(extras,/payroll-review\.mjs\?v=076/);
+  assert.match(extras,/payroll-review\.mjs\?v=076c1/);
+  assert.match(extras,/scheduled-hours\.mjs\?v=076c1/);
 });
 
 test('TokiMate PWA precache uses current release URLs',()=>{
   const sw=read('zangyo36/sw.js');
-  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6-day-editor-autosave1'/);
-  for(const asset of ['logic.mjs','navigation.js','attendance-core.mjs','salary-basis.mjs','payroll-review.mjs']){
+  assert.match(sw,/CACHE_NAME='zangyo36-v0\.7\.6-monthly-controls1'/);
+  for(const asset of ['navigation.js','salary-basis.mjs']){
     assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=${VERSION}`));
   }
-  assert.match(sw,/app\.js\?v=076a1/);
-  assert.match(sw,/extras\.mjs\?v=076m2/);
-  assert.match(sw,/monthly-ui\.mjs\?v=076m2/);
+  assert.match(sw,/app\.js\?v=076b1/);
+  for(const asset of ['logic.mjs','attendance-core.mjs','payroll-review.mjs','scheduled-hours.mjs'])assert.match(sw,new RegExp(`${asset.replace('.','\\.')}\\?v=076c1`));
+  assert.match(sw,/extras\.mjs\?v=076m3/);
+  assert.match(sw,/monthly-ui\.mjs\?v=076m3/);
   assert.doesNotMatch(sw,/\?v=074|\?v=073|\?v=072|\?v=071|\?v=070|\?v=064|\?v=061/);
 });
 
