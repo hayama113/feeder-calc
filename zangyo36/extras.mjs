@@ -54,4 +54,4 @@ import('./attendance-core.mjs?v=076').catch(e=>console.error('attendance core lo
 import('./character-motion.mjs?v=068').catch(e=>console.error('character motion load failed',e));
 import('./salary-basis.mjs?v=076').catch(e=>console.error('salary basis load failed',e));
 import('./payroll-review.mjs?v=076').catch(e=>console.error('payroll review load failed',e));
-import('./monthly-ui.mjs?v=076m1').catch(e=>console.error('monthly UI load failed',e));
+import('./monthly-ui.mjs?v=076m2').catch(e=>console.error('monthly UI load failed',e));
