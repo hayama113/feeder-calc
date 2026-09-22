@@ -1,7 +1,7 @@
-const APP_VERSION = '3.4.2';
+const APP_VERSION = '3.5.0';
 
 const VERSIONS = {
-  app: 'Web v3.4.2',
+  app: 'Web v3.5.0',
   ampacity: '2026.06-A',
   physical: '2026.08-S',
   form: '2026.06-B'
@@ -80,16 +80,16 @@ const compareModeDefault = 'major';
 const kgPerM = (kg, m) => Number((kg / m).toFixed(3));
 const innerByThickness = (outer, thickness) => Number((outer - 2 * thickness).toFixed(1));
 
-const GROUND_RULES = [
-  {groundType:'C種', wireType:'IV', maxBreaker:100, size:'8sq'},
-  {groundType:'C種', wireType:'IV', maxBreaker:200, size:'14sq'},
-  {groundType:'C種', wireType:'IV', maxBreaker:400, size:'22sq'},
-  {groundType:'C種', wireType:'IV', maxBreaker:800, size:'38sq'},
-  {groundType:'D種', wireType:'IV', maxBreaker:100, size:'5.5sq'},
-  {groundType:'D種', wireType:'IV', maxBreaker:200, size:'8sq'},
-  {groundType:'D種', wireType:'IV', maxBreaker:400, size:'14sq'},
-  {groundType:'D種', wireType:'IV', maxBreaker:800, size:'22sq'}
-];
+const GROUND_RULES = ['C種','D種'].flatMap(groundType=>[
+  {maxBreaker:30,size:'1.6mm以上（2sq相当）'},
+  {maxBreaker:60,size:'2.0mm以上（3.5sq相当）'},
+  {maxBreaker:100,size:'5.5sq以上'},
+  {maxBreaker:150,size:'8sq以上'},
+  {maxBreaker:250,size:'14sq以上'},
+  {maxBreaker:400,size:'22sq以上'},
+  {maxBreaker:600,size:'38sq以上'},
+  {maxBreaker:1000,size:'60sq以上'}
+].map(rule=>({groundType,wireType:'IV',...rule})));
 
 const CABLE_DATA = {
   'CV-1C': {
@@ -373,6 +373,23 @@ const RACK_ALLOWABLE_KGF_M_AT_2M = {
   S:{SR:[80,80,79,78,77,75],QR:[268,267,267,267,266,266,265,265,250,null]}
 };
 const RACK_WEAK_TYPES = new Set(['HP','AE','CPEV','CPEVS','5C-FB','7C-FB']);
+const RACK_GROUND_WIRE_RULES = [
+  {maxBreaker:30,size:'1.6mm以上（2sq相当）'},
+  {maxBreaker:60,size:'2.0mm以上（3.5sq相当）'},
+  {maxBreaker:100,size:'5.5sq以上'},
+  {maxBreaker:150,size:'8sq以上'},
+  {maxBreaker:250,size:'14sq以上'},
+  {maxBreaker:400,size:'22sq以上'},
+  {maxBreaker:600,size:'38sq以上'},
+  {maxBreaker:1000,size:'60sq以上'}
+];
+const RACK_BOND_WIRE_RULES = [
+  {maxBreaker:30,size:'1.6mm以上（2sq相当）'},
+  {maxBreaker:60,size:'2.0mm以上（3.5sq相当）'},
+  {maxBreaker:100,size:'5.5sq以上'},
+  {maxBreaker:250,size:'14sq以上'},
+  {maxBreaker:600,size:'38sq以上'}
+];
 let rackCableItems = [];
 
 const DATA_ISSUES = [
@@ -416,6 +433,7 @@ const DOC_GROUPS = [
     {id:'conduit_support', title:'配管支持間隔', searchable:false, build:buildConduitSupportDoc},
     {id:'rack_width', title:'ラック幅選定の考え方', searchable:false, build:buildRackWidthDoc},
     {id:'rack_sr_qr_details', title:'SR・QRラック寸法・質量・許容荷重', searchable:true, build:buildRackSrQrDetailsDoc},
+    {id:'rack_grounding', title:'ケーブルラックの接地・ボンディング', searchable:true, build:buildRackGroundingDoc},
     {id:'rack_support', title:'ラック支持間隔', searchable:false, build:buildRackSupportDoc},
     {id:'rack_seismic', title:'ラック耐震の考え方', searchable:false, build:buildRackSeismicDoc}
   ]},
@@ -713,6 +731,59 @@ function rackCandidates(finish){
     allowableKgM:loadGroup[type][index]
   }))).sort((a,b)=>a.width-b.width||(a.type==='SR'?-1:1));
 }
+function rackWireRuleFor(breaker,rules){
+  const value=Number(breaker);
+  return rules.find(rule=>value<=rule.maxBreaker)||null;
+}
+function rackGroundingSelection({material='metal',hasPower=true,maxVoltage,breakerAt,flexibleJoints=0,expansionJoints=0,hasMetalSeparator=false,contactProtection=false,length=0,wireType='EM-IE/F'}={}){
+  const voltage=Number(maxVoltage),breaker=Number(breakerAt),flexible=Number(flexibleJoints),expansion=Number(expansionJoints),rackLength=Number(length);
+  const base={status:'waiting',groundType:'-',groundSymbol:'-',groundWire:'-',bondWire:'-',bondLocations:'-',basis:'-',notice:'接地選定条件を入力してください。'};
+  if(material==='resin')return{...base,status:'not-applicable',groundType:'対象外',groundWire:'不要（ラック本体）',bondWire:'不要（ラック本体）',bondLocations:'0箇所',basis:'非導電性ラック',notice:'樹脂製ラック本体はC種・D種接地線の自動選定対象外です。金属製支持材、金属製附属品、設計仕様は別途確認してください。'};
+  if(!hasPower)return{...base,status:'review',groundType:'仕様確認',basis:'弱電専用ラック',notice:'弱電ケーブル専用ラックはC種・D種の自動選定対象外です。機能接地、ノイズ対策、通信設備仕様を確認してください。'};
+  if(!Number.isFinite(voltage)||voltage<=0||!Number.isFinite(breaker)||breaker<=0)return base;
+  if(!Number.isInteger(flexible)||flexible<0||!Number.isInteger(expansion)||expansion<0)return{...base,status:'error',notice:'自在継手数・エキスパンション継手数は0以上の整数で入力してください。'};
+  if(voltage>600)return{...base,status:'stop',groundType:'自動選定停止',basis:`最大使用電圧 ${formatNumber(voltage,0)}V`,notice:'低圧範囲を超えています。高圧ケーブル用ラックはA種接地工事を原則とし、接触防護措置によるD種適用条件を含めて個別設計してください。'};
+  const groundType=voltage<=300?'D種':'C種',groundSymbol=groundType==='D種'?'ED':'EC';
+  const groundRule=rackWireRuleFor(breaker,RACK_GROUND_WIRE_RULES);
+  if(!groundRule)return{...base,status:'stop',groundType:`${groundType}接地工事`,groundSymbol,basis:`配線用遮断器等 ${formatNumber(breaker,0)}A`,notice:'接地線選定表の上限1,000Aを超えています。最大値へ丸めず、短絡電流・遮断時間・設計仕様により個別設計してください。'};
+  const bondRule=rackWireRuleFor(breaker,RACK_BOND_WIRE_RULES),bondCount=flexible+expansion;
+  const notes=[`${groundType}接地工事、配線用遮断器等${formatNumber(breaker,0)}Aの区分から選定しました。`];
+  if(!bondRule)notes.push('ボンド線は公共建築工事標準仕様書の表範囲600Aを超えるため個別確認です。');
+  if(bondCount>0)notes.push(`自在継手${flexible}箇所・エキスパンション${expansion}箇所をボンディング対象として計${bondCount}箇所を表示しています。`);
+  else notes.push('自在継手・エキスパンション継手がなければ、通常継手は機械的かつ電気的な連続性を確認します。');
+  if(hasMetalSeparator)notes.push('金属製セパレーター・隔壁もラックと同じ接地系統で電気的連続性を確認してください。');
+  if(groundType==='C種'&&contactProtection)notes.push('接触防護措置によりD種とできる可能性がありますが、自動変更はしていません。設計仕様で確認してください。');
+  if(groundType==='D種'&&rackLength>0&&rackLength<=8)notes.push('短尺ラックの接地省略条件に該当する可能性がありますが、安全側として接地線を選定しています。');
+  return{
+    status:'ok',groundType:`${groundType}接地工事`,groundSymbol,
+    groundWire:`${wireType} ${groundRule.size}`,
+    bondWire:bondRule?`${wireType} ${bondRule.size}`:'個別確認（600A超）',
+    bondLocations:`${bondCount}箇所（自在${flexible}・伸縮${expansion}）`,
+    basis:`最大使用電圧${formatNumber(voltage,0)}V／配線用遮断器等${formatNumber(breaker,0)}A`,
+    notice:notes.join(' ')
+  };
+}
+function calculateRackGrounding(){
+  if(!$('rackGroundResult'))return;
+  const hasPower=rackCableItems.some(item=>!RACK_WEAK_TYPES.has(item.type));
+  const hasWeak=rackCableItems.some(item=>RACK_WEAK_TYPES.has(item.type));
+  const selection=rackGroundingSelection({
+    material:$('rackGroundMaterial').value,hasPower,
+    maxVoltage:$('rackGroundVoltage').value,breakerAt:$('rackGroundBreaker').value,
+    flexibleJoints:$('rackFlexibleJointCount').value,expansionJoints:$('rackExpansionJointCount').value,
+    hasMetalSeparator:hasPower&&hasWeak&&$('rackSeparator').checked,
+    contactProtection:$('rackContactProtection').checked,length:$('rackLength').value,
+    wireType:$('rackGroundWireType').value
+  });
+  $('rackGroundTypeResult').textContent=selection.groundType;
+  $('rackGroundSymbolResult').textContent=selection.groundSymbol;
+  $('rackGroundWireResult').textContent=selection.groundWire;
+  $('rackBondWireResult').textContent=selection.bondWire;
+  $('rackBondLocationsResult').textContent=selection.bondLocations;
+  $('rackGroundBasisResult').textContent=selection.basis;
+  $('rackGroundNotice').textContent=selection.notice;
+  $('rackGroundNotice').classList.toggle('danger',selection.status==='error'||selection.status==='stop');
+}
 function setRackResultError(message){
   const el=$('rackResultError'); if(!el)return;
   el.textContent=message||''; el.classList.toggle('hidden',!message);
@@ -721,6 +792,7 @@ function setRackResultError(message){
 }
 function calculateRackSizing(){
   if(!$('rackCalculatorPanel'))return;
+  calculateRackGrounding();
   const direction=$('rackDirection').value,finish=$('rackFinish').value;
   const length=Number($('rackLength').value||0),supportInterval=Number($('rackSupportInterval').value||0);
   const reserve=Number($('rackFutureReserve').value||0),loadLimit=Number($('rackLoadLimit').value||80);
@@ -796,7 +868,7 @@ function initRackCalculator(){
   if(!$('rackCalculatorPanel'))return;
   rackCableItems=[createRackCableItem()]; renderRackCableRows();
   $('addRackCableBtn').addEventListener('click',()=>{if(rackCableItems.length>=10)return showToast('ケーブル条件は10行までです。');rackCableItems.push(createRackCableItem());renderRackCableRows();calculateRackSizing();});
-  ['rackDirection','rackFinish','rackLength','rackSupportInterval','rackFutureReserve','rackLoadLimit','rackSeparator','rackSeparatorWidth','rackCover','rackCoverMass'].forEach(id=>$(id)?.addEventListener($(id).tagName==='SELECT'||$(id).type==='checkbox'?'change':'input',calculateRackSizing));
+  ['rackDirection','rackFinish','rackLength','rackSupportInterval','rackFutureReserve','rackLoadLimit','rackSeparator','rackSeparatorWidth','rackCover','rackCoverMass','rackGroundMaterial','rackGroundVoltage','rackGroundBreaker','rackGroundWireType','rackFlexibleJointCount','rackExpansionJointCount','rackContactProtection'].forEach(id=>$(id)?.addEventListener($(id).tagName==='SELECT'||$(id).type==='checkbox'?'change':'input',calculateRackSizing));
   $('openRackCalculator')?.addEventListener('click',()=>switchScreen('rack'));
   $('returnCalcFromRack')?.addEventListener('click',()=>switchScreen('calc'));
   calculateRackSizing();
@@ -1871,6 +1943,21 @@ function buildRackSrQrDetailsDoc(){
     rows.push({finish:RACK_FINISH_LABELS[finish],type,product:rackProductCode(type,width,finish),width:`${width}mm`,height:`${type==='SR'?70:100}mm`,mass3m:`${formatNumber(RACK_MASS_KG_PER_3M[finish][type][index],2)}kg/3m`,massM:`${formatNumber(RACK_MASS_KG_PER_3M[finish][type][index]/3,2)}kg/m`,load:loadGroup[type][index]?`${loadGroup[type][index]}kgf/m`:'メーカー確認'});
   })));
   return{note:'寸法・単品質量・許容静荷重は、ネグロス電工「電設資材カタログ2026/27A」のメーカー参考値です。許容静荷重は支点間2.0m、等分布荷重、掲載された複数値のうち安全側の小さい値です。製品仕様の変更、組立方向、継ぎ目、支持金具、曲がり部、耐震条件は採用品資料を優先してください。',headers:['仕上げ','タイプ','品番','幅','高さ','単品質量','1m質量','許容静荷重（2.0m支点間）'],keys:['finish','type','product','width','height','mass3m','massM','load'],rows};
+}
+function buildRackGroundingDoc(){
+  return{
+    note:'低圧の金属製ケーブルラックに施す接地線とボンド線の参考表です。公共建築工事標準仕様書（電気設備工事編）令和7年版 2.10.1、2.13.3、2.13.4、2.13.6、2.13.9及び表2.2.1を基に整理しています。内線規程、設計図書、採用品仕様を優先してください。',
+    headers:['区分','判定・サイズ','適用・注意'],keys:['type','selection','note'],cardLayout:true,
+    rows:[
+      {type:'接地種別',selection:'300V以下：D種／300V超の低圧：C種',note:'300V超で接触防護措置がある場合はD種とできる条件があるが、アプリは自動変更しない'},
+      ...RACK_GROUND_WIRE_RULES.map(rule=>({type:'ラック接地線',selection:`遮断器${rule.maxBreaker}A以下：${rule.size}`,note:'C種・D種共通。最大1,000Aまで'})),
+      ...RACK_BOND_WIRE_RULES.map(rule=>({type:'ボンド線',selection:`遮断器${rule.maxBreaker}A以下：${rule.size}`,note:'自在継手・エキスパンション部。600A超は個別確認'})),
+      {type:'通常継手',selection:'機械的かつ電気的に接続',note:'電気的連続性が確保されない箇所はボンディングを確認'},
+      {type:'金属製セパレーター',selection:'ラックと同じ接地系統で連続性確認',note:'強電・弱電共用時は隔壁・離隔・ノイズ対策も確認'},
+      {type:'短尺ラック',selection:'接地省略条件がある場合も安全側に接地線を表示',note:'施工場所、接触防護、乾燥状態、長さ及び設計仕様で最終確認'},
+      {type:'高圧・弱電専用・樹脂製',selection:'自動選定対象外',note:'高圧はA種又は接触防護時のD種条件、弱電は機能接地、樹脂製は金属附属品を個別確認'}
+    ]
+  };
 }
 function buildRackSupportDoc(){
   return {

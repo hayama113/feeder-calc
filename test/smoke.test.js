@@ -83,7 +83,9 @@ function rackTestApi() {
       },
       protectiveSizes: type => rackCableSizes(type),
       allRackMasses: () => rackCableTypes().flatMap(type=>rackCableSizes(type).map(size=>({type,size,mass:rackReferenceMassKgM(type,size),source:rackMassSource(type,size)}))),
-      rackReference: (diameter,count,mass) => rackReferenceFor(diameter,count,mass)
+      rackReference: (diameter,count,mass) => rackReferenceFor(diameter,count,mass),
+      rackGrounding: input => rackGroundingSelection(input),
+      groundSize: (kind,breaker) => groundWireSizeFor(kind,breaker)
     };
   `;
   vm.createContext(context);
@@ -126,4 +128,28 @@ test('protective cable sizes and rack mass references cover audited gaps', () =>
   assert.deepEqual(Array.from(api.protectiveSizes('CV-4C')).slice(-5), [200,250,325,400,500]);
   assert.ok(api.allRackMasses().every(item => Number.isFinite(item.mass) && item.mass > 0));
   assert.match(api.rackReference(17, 1, 0.59), /^SR20（W200）$/);
+});
+
+test('rack grounding selects C/D grounding and bond conductors at boundaries', () => {
+  const { rackGrounding,groundSize } = rackTestApi();
+  const example=rackGrounding({material:'metal',hasPower:true,maxVoltage:440,breakerAt:175,flexibleJoints:2,expansionJoints:1,wireType:'EM-IE/F'});
+  assert.equal(example.status,'ok');
+  assert.equal(example.groundType,'C種接地工事');
+  assert.equal(example.groundWire,'EM-IE/F 14sq以上');
+  assert.equal(example.bondWire,'EM-IE/F 14sq以上');
+  assert.equal(example.bondLocations,'3箇所（自在2・伸縮1）');
+  assert.equal(rackGrounding({material:'metal',hasPower:true,maxVoltage:300,breakerAt:100}).groundType,'D種接地工事');
+  assert.equal(rackGrounding({material:'metal',hasPower:true,maxVoltage:301,breakerAt:100}).groundType,'C種接地工事');
+  assert.match(rackGrounding({material:'metal',hasPower:true,maxVoltage:440,breakerAt:601}).bondWire,/個別確認/);
+  assert.equal(groundSize('C種',175),'14sq以上');
+  assert.equal(groundSize('D種',175),'14sq以上');
+});
+
+test('rack grounding stops or defers unsupported conditions', () => {
+  const { rackGrounding } = rackTestApi();
+  assert.equal(rackGrounding({material:'resin',hasPower:true,maxVoltage:440,breakerAt:175}).status,'not-applicable');
+  assert.equal(rackGrounding({material:'metal',hasPower:false,maxVoltage:100,breakerAt:30}).status,'review');
+  assert.equal(rackGrounding({material:'metal',hasPower:true,maxVoltage:6600,breakerAt:100}).status,'stop');
+  assert.equal(rackGrounding({material:'metal',hasPower:true,maxVoltage:440,breakerAt:1001}).status,'stop');
+  assert.equal(rackGrounding({material:'metal',hasPower:true,maxVoltage:440,breakerAt:175,flexibleJoints:0.5}).status,'error');
 });

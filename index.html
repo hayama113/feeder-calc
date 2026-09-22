@@ -443,6 +443,30 @@
             <label class="checkbox-label"><input id="rackCover" type="checkbox" /><span>カバーを設ける</span></label>
             <label><span>カバー質量 [kg/m]</span><input id="rackCoverMass" type="number" inputmode="decimal" min="0" step="0.01" value="0" /><div class="field-hint">カバー使用時は採用品の質量を入力してください。</div></label>
           </div>
+          <div class="subpanel top-gap" id="rackGroundingPanel">
+            <div class="panel-title">ラック接地・ボンディング選定</div>
+            <p class="field-hint">低圧の金属製ケーブルラックを対象に、最大使用電圧と配線用遮断器等の定格電流（AFではなくAT）から自動選定します。ラック本体の接地線と、自在継手・エキスパンション部のボンド線を分けて表示します。</p>
+            <div class="grid two top-gap">
+              <label><span>ラック材質</span><select id="rackGroundMaterial"><option value="metal">金属製</option><option value="resin">樹脂製・非導電性</option></select></label>
+              <label><span>接地線種類</span><select id="rackGroundWireType"><option value="EM-IE/F">EM-IE/F</option><option value="IV">IV</option></select></label>
+              <label><span>最大使用電圧 [V]</span><input id="rackGroundVoltage" type="number" inputmode="decimal" min="1" step="1" placeholder="例：440" /><div class="field-hint">300V以下はD種、300V超の低圧はC種。600V超は自動選定を停止します。</div></label>
+              <label><span>基準遮断器 AT [A]</span><input id="rackGroundBreaker" type="number" inputmode="decimal" min="1" step="1" placeholder="例：175" /><div class="field-hint">複数回路では、最も大きい接地線を必要とする回路のATを入力してください。遮断器容量は合計しません。</div></label>
+              <label><span>自在継手数 [箇所]</span><input id="rackFlexibleJointCount" type="number" inputmode="numeric" min="0" step="1" value="0" /></label>
+              <label><span>エキスパンション継手数 [箇所]</span><input id="rackExpansionJointCount" type="number" inputmode="numeric" min="0" step="1" value="0" /></label>
+              <label class="checkbox-label"><input id="rackContactProtection" type="checkbox" /><span>接触防護措置あり</span></label>
+            </div>
+            <div id="rackGroundResult" class="top-gap">
+              <div class="result-grid">
+                <div class="result-card"><span>接地工事種別</span><strong id="rackGroundTypeResult">-</strong></div>
+                <div class="result-card"><span>図面・端子記号</span><strong id="rackGroundSymbolResult">-</strong></div>
+                <div class="result-card"><span>推奨ラック接地線</span><strong id="rackGroundWireResult">-</strong></div>
+                <div class="result-card"><span>推奨ボンド線</span><strong id="rackBondWireResult">-</strong></div>
+                <div class="result-card"><span>ボンディング対象</span><strong id="rackBondLocationsResult">-</strong></div>
+                <div class="result-card"><span>選定基準</span><strong id="rackGroundBasisResult">-</strong></div>
+              </div>
+              <div id="rackGroundNotice" class="result-notice top-gap">接地選定条件を入力してください。</div>
+            </div>
+          </div>
           <div id="rackResult" class="hidden top-gap">
             <div id="rackResultError" class="result-error hidden"></div>
             <div class="result-grid top-gap">
@@ -594,6 +618,6 @@
 
   <div id="formulaPopup" class="formula-popup hidden" role="status"></div>
   <div id="toast"></div>
-  <script src="app.js?v=20260829_rack_mass_rounding"></script>
+  <script src="app.js?v=20260922_rack_grounding"></script>
 </body>
 </html>
