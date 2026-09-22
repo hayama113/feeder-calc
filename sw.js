@@ -1,4 +1,4 @@
-const CACHE_NAME = 'feeder-calc-v4-20260904-child-scope-fix';
+const CACHE_NAME = 'feeder-calc-v4-20260922-rack-grounding';
 const ASSETS = [
   './',
   './index.html',
